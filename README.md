@@ -26,14 +26,14 @@ Each skill enforces **credit budget rules**, prefers **batch/parsed APIs over ra
 
 ## Skills
 
-| Skill | Use for | Signature feature |
-|-------|---------|-------------------|
-| [**dune**](skills/dune) | SQL on 100+ chains (Dune Analytics) | 500 / 700 credit budget gates, FREE ↔ PAID key rotation, partition-pruning SQL templates |
-| [**solscan**](skills/solscan) | Solana wallet/token/NFT data (Solscan Pro v2) | Export endpoints = 15× cheaper than pagination, multi-endpoints = 50× cheaper than loops |
-| [**nansen**](skills/nansen) | Smart Money + wallet profiling on 37 chains | `premium_labels: true` 30× cost trap, live credit balance headers |
-| [**solana-rpc**](skills/solana-rpc) | Raw Solana RPC (Helius / QuickNode / Ankr / …) | JSON-RPC array batching, DAS over `getProgramAccounts`, Helius Enhanced Tx |
+| Skill | Standalone repo | Use for | Signature feature |
+|-------|-----------------|---------|-------------------|
+| [**dune**](skills/dune) | [`dune-skill`](https://github.com/Vo1ganin/dune-skill) | SQL on 100+ chains (Dune Analytics) | 500 / 700 credit budget gates, FREE ↔ PAID key rotation |
+| [**solscan**](skills/solscan) | [`solscan-skill`](https://github.com/Vo1ganin/solscan-skill) | Solana wallet/token/NFT data (Solscan Pro v2) | Export endpoints 15× cheaper than pagination, multi-endpoints 50× cheaper |
+| [**nansen**](skills/nansen) | [`nansen-skill`](https://github.com/Vo1ganin/nansen-skill) | Smart Money + wallet profiling on 37 chains | `premium_labels: true` 30× cost trap, live credit balance headers |
+| [**solana-rpc**](skills/solana-rpc) | [`solana-rpc-skill`](https://github.com/Vo1ganin/solana-rpc-skill) | Raw Solana RPC (Helius / QuickNode / Ankr / …) | JSON-RPC array batching, DAS over `getProgramAccounts`, Helius Enhanced Tx |
 
-Each skill folder contains `SKILL.md`, topic `references/*.md`, and runnable `references/examples/*.py`.
+Each skill folder contains `SKILL.md`, topic `references/*.md`, and runnable `references/examples/*.py`. Each skill is also available as a **standalone public GitHub repo** — install just the one you need from its own repo.
 
 ---
 
