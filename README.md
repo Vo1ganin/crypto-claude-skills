@@ -5,6 +5,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Skills: 4](https://img.shields.io/badge/skills-4-blue.svg)](#skills)
 [![Powered by Claude](https://img.shields.io/badge/powered%20by-Claude%20Code-ff6b6b.svg)](https://claude.com/claude-code)
+[![Cross-agent](https://img.shields.io/badge/agents-Claude%20%7C%20Codex%20%7C%20Cursor-brightgreen.svg)](AGENTS.md)
 
 Each skill enforces **credit budget rules**, prefers **batch/parsed APIs over raw loops**, and ships with **ready-to-run async Python examples** — built from real-world on-chain research (copytrade analysis, bot reverse-engineering, wallet profiling).
 
@@ -15,6 +16,7 @@ Each skill enforces **credit budget rules**, prefers **batch/parsed APIs over ra
 - [Skills](#skills)
 - [Install](#install)
 - [Configure API keys](#configure-api-keys)
+- [Cross-agent support](#cross-agent-support)
 - [Design principles](#design-principles)
 - [Repository layout](#repository-layout)
 - [Contributing](#contributing)
@@ -72,6 +74,25 @@ set -a; source .env; set +a
 | `SOLANA_RPC_URL` | Any Solana RPC provider (Helius, QuickNode, …) |
 
 Full key reference with examples in [`.env.example`](.env.example).
+
+---
+
+## Cross-agent support
+
+Primary target is Claude Code — but the content works across other AI coding agents too.
+
+| Agent | What to do | How it's used |
+|-------|-----------|---------------|
+| **Claude Code** | `cp -R skills/<name> ~/.claude/skills/` | Auto-triggers on prompt keywords |
+| **Claude Agent SDK** | Load `SKILL.md` programmatically | Your own Claude-based bot |
+| **OpenAI Codex / Codex CLI** | Reads [`AGENTS.md`](AGENTS.md) automatically on project load | Cross-skill instructions |
+| **Cursor / Windsurf** | Copy `SKILL.md` into `.cursor/rules/` | Per-project rules |
+| **MCP-aware clients** (Claude, Cursor, ChatGPT, Codex, OpenCode) | Configure Dune + Solscan MCP servers per `.env.example` | Tool calls work natively |
+| **Any LLM via API** | Include `SKILL.md` as system prompt | Self-contained instructions |
+
+Note: `skills/*/references/examples/*.py` are provider-agnostic — they work with plain Python, no assistant needed.
+
+See [`AGENTS.md`](AGENTS.md) for the full agents.md-spec instruction set.
 
 ---
 
