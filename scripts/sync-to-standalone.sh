@@ -248,13 +248,13 @@ if [[ $# -lt 1 ]]; then
   echo "Usage: $0 <skill> [--init]"
   echo "       $0 --all [--init]"
   echo ""
-  echo "Skills: dune solscan nansen solana-rpc"
+  echo "Skills: dune solscan nansen solana-rpc pumpfun dexscreener mev-bundles"
   exit 1
 fi
 
 if [[ "$1" == "--all" ]]; then
   init="${2:-}"
-  for skill in dune solscan nansen solana-rpc; do
+  for skill in dune solscan nansen solana-rpc pumpfun dexscreener mev-bundles; do
     sync_skill "$skill" "$init"
   done
 else
