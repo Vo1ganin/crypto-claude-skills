@@ -88,7 +88,7 @@ This means:
 
 Helius also provides archive — most production providers do. Public RPC does NOT.
 
-## Empirical performance (from memory — copytrade project 2026)
+## Empirical performance (production)
 
 - `getTransaction` on QuickNode: ~10k req/min sustainable, ~15 KB response per jsonParsed tx
 - `getBlock` full: ~30s timeout needed, megabyte-size payload; use `transactionDetails: "signatures"` to shrink if you only need sig list
