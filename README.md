@@ -3,7 +3,7 @@
 > Production-ready [Claude Code](https://claude.com/claude-code) skills for on-chain data APIs — Dune Analytics, Solscan Pro, Nansen, and universal Solana RPC (Helius / QuickNode / any provider).
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-[![Skills: 7](https://img.shields.io/badge/skills-7-blue.svg)](#skills)
+[![Skills: 8](https://img.shields.io/badge/skills-8-blue.svg)](#skills)
 [![Powered by Claude](https://img.shields.io/badge/powered%20by-Claude%20Code-ff6b6b.svg)](https://claude.com/claude-code)
 [![Cross-agent](https://img.shields.io/badge/agents-Claude%20%7C%20Codex%20%7C%20Cursor-brightgreen.svg)](AGENTS.md)
 
@@ -35,6 +35,7 @@ Each skill enforces **credit budget rules**, prefers **batch/parsed APIs over ra
 | [**pumpfun**](skills/pumpfun) | [`pumpfun-skill`](https://github.com/Vo1ganin/pumpfun-skill) | pump.fun bonding curves + PumpPortal API | WebSocket streaming (single-conn rule), Lightning vs Local trading, sniper/copytrade examples |
 | [**dexscreener**](skills/dexscreener) | [`dexscreener-skill`](https://github.com/Vo1ganin/dexscreener-skill) | Current DEX pair data across 20+ chains | Free/no-auth API, batch 30 tokens per call, 300 rpm fast tier |
 | [**mev-bundles**](skills/mev-bundles) | [`mev-bundles-skill`](https://github.com/Vo1ganin/mev-bundles-skill) | MEV bundles + bribes: what/how to find/how to identify | Jito + 8 other relays (Bloxroute, Nozomi, Astralane, BlockRazor, Stellium, Falcon, Flashblocks, 1node), sandwich detection |
+| [**coinmarketcap**](skills/coinmarketcap) | [`coinmarketcap-skill`](https://github.com/Vo1ganin/coinmarketcap-skill) | CoinMarketCap Pro API (prices, OHLCV, F&G, global metrics) | Credit-aware batching (100 IDs per call), symbol→ID caching, live `credit_count` logging |
 
 Each skill folder contains `SKILL.md`, topic `references/*.md`, and runnable `references/examples/*.py`. Each skill is also available as a **standalone public GitHub repo** — install just the one you need from its own repo.
 
@@ -47,9 +48,9 @@ Each skill folder contains `SKILL.md`, topic `references/*.md`, and runnable `re
 git clone https://github.com/Vo1ganin/crypto-claude-skills.git
 cd crypto-claude-skills
 
-# Install all seven skills to Claude Code
+# Install all eight skills to Claude Code
 mkdir -p ~/.claude/skills
-for s in dune solscan nansen solana-rpc pumpfun dexscreener mev-bundles; do
+for s in dune solscan nansen solana-rpc pumpfun dexscreener mev-bundles coinmarketcap; do
   cp -R skills/$s ~/.claude/skills/
 done
 ```
