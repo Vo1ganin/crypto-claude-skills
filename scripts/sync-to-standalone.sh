@@ -33,6 +33,15 @@ skill_meta() {
     solana-rpc)
       echo "solana-rpc-skill|quicknode|Claude Code skill for Solana JSON-RPC — universal (Helius/QuickNode/any), batched, enhanced APIs"
       ;;
+    pumpfun)
+      echo "pumpfun-skill|pumpfun|Claude Code skill for pump.fun — bonding curves, PumpPortal API (WebSocket + Lightning/Local), sniper/copytrade/migration examples"
+      ;;
+    dexscreener)
+      echo "dexscreener-skill|dexscreener|Claude Code skill for DexScreener — free public API for current DEX pair data across 20+ chains, batch price fetches"
+      ;;
+    mev-bundles)
+      echo "mev-bundles-skill|mev-bundles|Claude Code skill for Solana MEV bundles & bribes — what they are, how to find & identify on-chain, Jito + 8 other relays"
+      ;;
     *)
       echo "ERROR: unknown skill: $1" >&2
       return 1
