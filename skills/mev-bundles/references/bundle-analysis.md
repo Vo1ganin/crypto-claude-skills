@@ -84,14 +84,14 @@ See `examples/kol_tip_analysis.py`.
 
 ## Mass-deploy bundle detection
 
-Creator wallets spawning many tokens atomically (BWAM / mass deploy) often use Jito bundles:
+Creator wallets spawning many tokens atomically often use Jito bundles:
 
 1. Find creator wallet (e.g. from pump.fun creator stats via Dune)
 2. Fetch all their create/create_v2 instructions
 3. Group by slot → if multiple creates in the same slot from same wallet → likely bundle
 4. Verify via bundle_id lookup
 
-Useful for: reverse-engineering how massdeploy bots sequence their launches, finding pump.fun creator clusters.
+Useful for: reverse-engineering how high-frequency creator bots sequence their launches, finding pump.fun creator clusters.
 
 ## Tip-floor historical analysis
 
