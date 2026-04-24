@@ -3,7 +3,7 @@
 > Production-ready [Claude Code](https://claude.com/claude-code) skills for on-chain data APIs — Dune Analytics, Solscan Pro, Nansen, and universal Solana RPC (Helius / QuickNode / any provider).
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-[![Skills: 4](https://img.shields.io/badge/skills-4-blue.svg)](#skills)
+[![Skills: 7](https://img.shields.io/badge/skills-7-blue.svg)](#skills)
 [![Powered by Claude](https://img.shields.io/badge/powered%20by-Claude%20Code-ff6b6b.svg)](https://claude.com/claude-code)
 [![Cross-agent](https://img.shields.io/badge/agents-Claude%20%7C%20Codex%20%7C%20Cursor-brightgreen.svg)](AGENTS.md)
 
@@ -32,6 +32,9 @@ Each skill enforces **credit budget rules**, prefers **batch/parsed APIs over ra
 | [**solscan**](skills/solscan) | [`solscan-skill`](https://github.com/Vo1ganin/solscan-skill) | Solana wallet/token/NFT data (Solscan Pro v2) | Export endpoints 15× cheaper than pagination, multi-endpoints 50× cheaper |
 | [**nansen**](skills/nansen) | [`nansen-skill`](https://github.com/Vo1ganin/nansen-skill) | Smart Money + wallet profiling on 37 chains | `premium_labels: true` 30× cost trap, live credit balance headers |
 | [**solana-rpc**](skills/solana-rpc) | [`solana-rpc-skill`](https://github.com/Vo1ganin/solana-rpc-skill) | Raw Solana RPC (Helius / QuickNode / Ankr / …) | JSON-RPC array batching, DAS over `getProgramAccounts`, Helius Enhanced Tx |
+| [**pumpfun**](skills/pumpfun) | [`pumpfun-skill`](https://github.com/Vo1ganin/pumpfun-skill) | pump.fun bonding curves + PumpPortal API | WebSocket streaming (single-conn rule), Lightning vs Local trading, sniper/copytrade examples |
+| [**dexscreener**](skills/dexscreener) | [`dexscreener-skill`](https://github.com/Vo1ganin/dexscreener-skill) | Current DEX pair data across 20+ chains | Free/no-auth API, batch 30 tokens per call, 300 rpm fast tier |
+| [**mev-bundles**](skills/mev-bundles) | [`mev-bundles-skill`](https://github.com/Vo1ganin/mev-bundles-skill) | MEV bundles + bribes: what/how to find/how to identify | Jito + 8 other relays (Bloxroute, Nozomi, Astralane, BlockRazor, Stellium, Falcon, Flashblocks, 1node), sandwich detection |
 
 Each skill folder contains `SKILL.md`, topic `references/*.md`, and runnable `references/examples/*.py`. Each skill is also available as a **standalone public GitHub repo** — install just the one you need from its own repo.
 
@@ -41,12 +44,12 @@ Each skill folder contains `SKILL.md`, topic `references/*.md`, and runnable `re
 
 ```bash
 # Clone
-git clone https://github.com/YOUR-USERNAME/crypto-claude-skills.git
+git clone https://github.com/Vo1ganin/crypto-claude-skills.git
 cd crypto-claude-skills
 
-# Install all four skills to Claude Code
+# Install all seven skills to Claude Code
 mkdir -p ~/.claude/skills
-for s in dune solscan nansen solana-rpc; do
+for s in dune solscan nansen solana-rpc pumpfun dexscreener mev-bundles; do
   cp -R skills/$s ~/.claude/skills/
 done
 ```
