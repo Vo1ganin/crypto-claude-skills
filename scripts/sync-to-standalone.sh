@@ -42,6 +42,9 @@ skill_meta() {
     mev-bundles)
       echo "mev-bundles-skill|mev-bundles|Claude Code skill for Solana MEV bundles & bribes — what they are, how to find & identify on-chain, Jito + 8 other relays"
       ;;
+    coinmarketcap)
+      echo "coinmarketcap-skill|coinmarketcap|Claude Code skill for CoinMarketCap Pro API — prices, OHLCV, market metrics, Fear & Greed, exchange & DEX data; credit-aware batching"
+      ;;
     *)
       echo "ERROR: unknown skill: $1" >&2
       return 1
@@ -93,6 +96,49 @@ SOLANA_RPC_URL=
 # Optional primary/fallback setup
 # SOLANA_RPC_URL_PRIMARY=
 # SOLANA_RPC_URL_FALLBACK=
+EOF
+      ;;
+    pumpfun)
+      cat > "$target/.env.example" <<'EOF'
+# Copy to .env and fill with your keys. Never commit .env.
+
+# Data API (WebSocket) and Local trading endpoint are free — no key needed
+# Only Lightning trading endpoint requires PumpPortal API key (0.5% fee)
+# PUMPPORTAL_API_KEY=
+
+# Required for any Local trading:
+SOLANA_RPC_URL=
+SOLANA_PRIVATE_KEY=
+EOF
+      ;;
+    dexscreener)
+      cat > "$target/.env.example" <<'EOF'
+# DexScreener API is free and requires no authentication.
+# No .env needed for the skill itself.
+# (File kept for consistency across the skill collection.)
+EOF
+      ;;
+    mev-bundles)
+      cat > "$target/.env.example" <<'EOF'
+# Copy to .env and fill with your keys where needed. Never commit .env.
+
+# For bundle analysis / KOL profiling — reads Solana blocks
+SOLANA_RPC_URL=
+
+# Optional Jito auth UUID for higher rate limits (default free: 1 rps per IP per region)
+# JITO_AUTH_UUID=
+
+# Optional alternative relay auth
+# BLOXROUTE_AUTH=
+EOF
+      ;;
+    coinmarketcap)
+      cat > "$target/.env.example" <<'EOF'
+# Copy to .env and fill with your CoinMarketCap Pro API key. Never commit .env.
+CMC_API_KEY=
+
+# Optional secondary key for rotation (separate accounts, separate quotas)
+# CMC_API_KEY_2=
 EOF
       ;;
   esac
@@ -257,13 +303,13 @@ if [[ $# -lt 1 ]]; then
   echo "Usage: $0 <skill> [--init]"
   echo "       $0 --all [--init]"
   echo ""
-  echo "Skills: dune solscan nansen solana-rpc pumpfun dexscreener mev-bundles"
+  echo "Skills: dune solscan nansen solana-rpc pumpfun dexscreener mev-bundles coinmarketcap"
   exit 1
 fi
 
 if [[ "$1" == "--all" ]]; then
   init="${2:-}"
-  for skill in dune solscan nansen solana-rpc pumpfun dexscreener mev-bundles; do
+  for skill in dune solscan nansen solana-rpc pumpfun dexscreener mev-bundles coinmarketcap; do
     sync_skill "$skill" "$init"
   done
 else
