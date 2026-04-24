@@ -1,0 +1,3687 @@
+# CoinMarketCap API Documentation
+
+> Complete documentation for Large Language Models
+
+---
+
+## Document: Standards and Conventions
+
+Understand response structure, identifier conventions, request bundling, date formats, and versioning.
+
+URL: https://pro.coinmarketcap.com/api/documentation/guides/standards-and-conventions
+
+# Standards and Conventions
+
+This page covers the request and response conventions used across all CoinMarketCap Pro API endpoints: the standard response envelope, how to identify cryptocurrencies and exchanges, how request bundling works, and the date/time and versioning rules.
+
+Each HTTP request must contain the header `Accept: application/json`. You should also send an `Accept-Encoding: deflate, gzip` header to receive data fast and efficiently.
+
+## Response payload format
+
+All endpoints return data in JSON format with the results of your query under `data` if the call is successful.
+
+A `status` object is always included for both successful calls and failures when possible. It always includes the current time on the server when the call was executed as `timestamp`, the number of API call credits this call utilized as `credit_count`, and the number of milliseconds it took to process the request as `elapsed`. Any details about errors encountered can be found under the `error_code` and `error_message`. See [Rate limits, errors, and troubleshooting](https://pro.coinmarketcap.com/api/documentation/guides/errors-and-rate-limits) for details on errors.
+
+```json
+{
+  "data": {
+    ...
+  },
+  "status": {
+    "timestamp": "2018-06-06T07:52:27.273Z",
+    "error_code": 400,
+    "error_message": "Invalid value for \"id\"",
+    "elapsed": 0,
+    "credit_count": 0
+  }
+}
+```
+
+## Cryptocurrency, exchange, and fiat currency identifiers
+
+Cryptocurrencies, exchanges, and fiat currencies can each be identified in multiple ways:
+
+| Entity | Preferred identifier | Alternative identifiers | Lookup endpoint |
+|--------|---------------------|------------------------|-----------------|
+| Cryptocurrency | `id` (e.g. `id=1` for Bitcoin) | `symbol` (e.g. `symbol=BTC`), `slug` | `/cryptocurrency/map` |
+| Exchange | `id` (e.g. `id=270` for Binance) | `slug` (e.g. `slug=binance`) | `/exchange/map` |
+| Fiat currency | [ISO 4217](https://www.iso.org/iso-4217-currency-codes.html) code (e.g. `USD`) | CoinMarketCap ID | `/fiat/map` |
+
+The API supports 93 fiat currencies and 4 precious metals (XAU, XAG, XPT, XPD) for the `convert` parameter. Call [/fiat/map](https://pro.coinmarketcap.com/api/documentation/pro-api-reference/tools#fiat-id-map) for the complete list of supported fiat currency codes and their CoinMarketCap IDs.
+
+> **Warning:** Using CoinMarketCap IDs is always recommended as not all cryptocurrency symbols are unique. They can also change with a cryptocurrency rebrand. If a symbol is used, the API will always default to the cryptocurrency with the highest market cap if there are multiple matches. The `convert` parameter also defaults to fiat if a cryptocurrency symbol matches a supported fiat currency. Use the `/map` endpoints to quickly find the corresponding CoinMarketCap ID for a cryptocurrency or exchange.
+
+## Bundling API calls
+
+Many endpoints support ID and crypto/fiat currency conversion bundling. This means you can pass multiple comma-separated values to an endpoint to query or convert several items at once. Check the `id`, `symbol`, `slug`, and `convert` query parameter descriptions in the endpoint documentation to see if this is supported for an endpoint.
+
+Endpoints that support bundling often return data as an object map instead of an array, especially in `v1` quote and info style endpoints. Newer versions may return arrays instead, so always confirm the response shape in the endpoint reference.
+
+For example, if you passed `symbol=BTC,ETH` to `/v1/cryptocurrency/quotes/latest` you would receive:
+
+```json
+{
+  "data": {
+    "BTC": {
+      ...
+    },
+    "ETH": {
+      ...
+    }
+  }
+}
+```
+
+Or if you passed `id=1,1027` you would receive:
+
+```json
+{
+  "data": {
+    "1": {
+      ...
+    },
+    "1027": {
+      ...
+    }
+  }
+}
+```
+
+Price conversions that are returned inside endpoint responses behave in the same fashion. These are enclosed in a `quote` object.
+
+## Date and time formats
+
+- All endpoints that require date/time parameters allow timestamps to be passed in either [ISO 8601](https://www.iso.org/iso-8601-date-and-time-format.html) format (e.g. `2018-06-06T01:46:40Z`) or in Unix time (e.g. `1528249600`). Timestamps that are passed in ISO 8601 format support basic and extended notations; if a timezone is not included, UTC will be the default.
+- All timestamps returned in JSON payloads are returned in UTC time using human-readable ISO 8601 format which follows this pattern: `yyyy-mm-ddThh:mm:ss.mmmZ`. The final `.mmm` designates milliseconds. Per the ISO 8601 spec the final `Z` is a constant that represents UTC time.
+- Data is collected, recorded, and reported in UTC time unless otherwise specified.
+
+## Versioning
+
+The CoinMarketCap API is versioned to guarantee new features and updates are non-breaking. The current documentation includes `v1`, `v2`, and `v3` endpoints depending on the product area. Always use the version shown on the endpoint you are integrating.
+
+---
+
+## Document: CoinMarketCap API Quick Start
+
+Get your CoinMarketCap API key, make your first production request, and find the right next step.
+
+URL: https://pro.coinmarketcap.com/api/documentation/guides/quick-start
+
+# CoinMarketCap API Quick Start
+
+> For the complete CoinMarketCap API documentation index, see [llms.txt](https://pro.coinmarketcap.com/llms.txt). For a single-file dump of all documentation, see [llms-full.txt](https://pro.coinmarketcap.com/llms-full.txt).
+
+Use this page to make a successful first request against the CoinMarketCap Pro API. If you are evaluating the product, start with the production API first so you can see the normal authentication flow and the real response shape.
+
+## What you'll do
+
+1. **Get an API key**
+
+   Sign up for a free Developer Portal account at [pro.coinmarketcap.com/signup](https://pro.coinmarketcap.com/signup).
+
+1. **Make one production request**
+
+   Start with a simple request against the live `pro-api.coinmarketcap.com` domain.
+
+1. **Choose the right next step**
+
+   Use the rest of the docs to find the right endpoint family, workflow, and implementation guidance.
+
+## 1. Get your API key
+
+Create an account at [pro.coinmarketcap.com/signup](https://pro.coinmarketcap.com/signup) or sign in to your existing account in the Developer Portal. Your API key is available from the dashboard. If you are just getting started, the free `Basic` plan is the fastest way to evaluate the API.
+
+## 2. Make your first production request
+
+For a first request, start with `GET /v1/cryptocurrency/listings/latest`. It returns a ranked list of active cryptocurrencies and gives you a good first look at the standard response structure used across the API.
+
+**cURL**
+
+```bash
+curl -G 'https://pro-api.coinmarketcap.com/v1/cryptocurrency/listings/latest' \
+  --data-urlencode 'start=1' \
+  --data-urlencode 'limit=10' \
+  --data-urlencode 'convert=USD' \
+  -H 'Accept: application/json' \
+  -H 'X-CMC_PRO_API_KEY: YOUR_API_KEY'
+```
+
+**Node.js**
+
+```javascript
+async function run() {
+  const url = new URL(
+    "https://pro-api.coinmarketcap.com/v1/cryptocurrency/listings/latest",
+  );
+
+  url.search = new URLSearchParams({
+    start: "1",
+    limit: "10",
+    convert: "USD",
+  }).toString();
+
+  const response = await fetch(url, {
+    headers: {
+      Accept: "application/json",
+      "X-CMC_PRO_API_KEY": "YOUR_API_KEY",
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error(`Request failed: ${response.status} ${response.statusText}`);
+  }
+
+  const data = await response.json();
+  console.log(data);
+}
+
+run().catch(console.error);
+```
+
+If you want a few more tested production examples for the same request, use Python 3 or Ruby:
+
+### Python 3
+
+```python
+import json
+import ssl
+import urllib.parse
+import urllib.request
+
+import certifi
+
+params = urllib.parse.urlencode(
+    {
+        "start": "1",
+        "limit": "10",
+        "convert": "USD",
+    }
+)
+
+request = urllib.request.Request(
+    f"https://pro-api.coinmarketcap.com/v1/cryptocurrency/listings/latest?{params}",
+    headers={
+        "Accept": "application/json",
+        "X-CMC_PRO_API_KEY": "YOUR_API_KEY",
+    },
+)
+
+context = ssl.create_default_context(cafile=certifi.where())
+
+with urllib.request.urlopen(request, context=context) as response:
+    data = json.load(response)
+
+print(data)
+```
+
+### Ruby
+
+```ruby
+require "json"
+require "net/http"
+require "uri"
+
+uri = URI("https://pro-api.coinmarketcap.com/v1/cryptocurrency/listings/latest")
+uri.query = URI.encode_www_form(
+  start: "1",
+  limit: "10",
+  convert: "USD",
+)
+
+request = Net::HTTP::Get.new(uri)
+request["Accept"] = "application/json"
+request["X-CMC_PRO_API_KEY"] = "YOUR_API_KEY"
+
+response = Net::HTTP.start(uri.hostname, uri.port, use_ssl: true) do |http|
+  http.request(request)
+end
+
+raise "Request failed: #{response.code} #{response.message}" unless response.is_a?(Net::HTTPSuccess)
+
+data = JSON.parse(response.body)
+puts JSON.pretty_generate(data)
+```
+
+## 3. Understand the response
+
+Most CoinMarketCap API endpoints return:
+
+- `data`: the records you asked for
+- `status`: request metadata such as `timestamp`, `credit_count`, `elapsed`, and any error information
+
+For this endpoint, `data` is a ranked list of cryptocurrencies. A truncated response looks like this:
+
+```json
+{
+  "status": {
+    "timestamp": "2025-01-15T12:00:00.000Z",
+    "error_code": 0,
+    "error_message": null,
+    "elapsed": 12,
+    "credit_count": 1
+  },
+  "data": [
+    {
+      "id": 1,
+      "name": "Bitcoin",
+      "symbol": "BTC",
+      "slug": "bitcoin",
+      "cmc_rank": 1,
+      "circulating_supply": 19800000,
+      "total_supply": 19800000,
+      "max_supply": 21000000,
+      "last_updated": "2025-01-15T12:00:00.000Z",
+      "quote": {
+        "USD": {
+          "price": 99150.42,
+          "volume_24h": 32500000000,
+          "percent_change_1h": 0.15,
+          "percent_change_24h": 2.34,
+          "percent_change_7d": -1.05,
+          "market_cap": 1963178316000,
+          "fully_diluted_market_cap": 2082158820000,
+          "last_updated": "2025-01-15T12:00:00.000Z"
+        }
+      }
+    }
+  ]
+}
+```
+
+Once you can successfully fetch and inspect that payload, you are ready to move deeper into the API.
+
+> Important: Do not call the Pro API directly from client-side JavaScript in the browser. Your API key should stay on your backend or another trusted server-side environment.
+
+## 4. Decide where to go next
+
+Use the next page based on what you need:
+
+- [Authentication](https://pro.coinmarketcap.com/api/documentation/guides/authentication) if you want the full authentication model and API key handling details
+- [Common workflows](https://pro.coinmarketcap.com/api/documentation/guides/common-workflows) if you want to start from a use case such as latest prices, historical data, exchange data, or DEX data
+- [Choose an endpoint](https://pro.coinmarketcap.com/api/documentation/pro-api-reference/endpoint-overview) if you want to browse the API by task and category
+- [API response format, IDs, and timestamps](https://pro.coinmarketcap.com/api/documentation/guides/standards-and-conventions) if you want to understand identifiers, bundling, and response structure
+- [Rate limits, errors, and troubleshooting](https://pro.coinmarketcap.com/api/documentation/guides/errors-and-rate-limits) if you want to understand the main failure cases early
+
+## Optional: Test in the sandbox
+
+If you want to validate request shape without using production data, you can use the sandbox environment at `sandbox-api.coinmarketcap.com`. The sandbox returns mock data and should not be used in your live application.
+
+**Sandbox cURL**
+
+```bash
+curl -G 'https://sandbox-api.coinmarketcap.com/v1/cryptocurrency/listings/latest' \
+  --data-urlencode 'start=1' \
+  --data-urlencode 'limit=5000' \
+  --data-urlencode 'convert=USD' \
+  -H 'Accept: application/json' \
+  -H 'X-CMC_PRO_API_KEY: b54bcf4d-1bca-4e8e-9a24-22ff2c3d462c'
+```
+
+## Optional: Postman collection
+
+To speed up evaluation and team sharing, you can also use the CoinMarketCap Postman collection. [Read more here](https://coinmarketcap.com/alexandria/article/register-for-coinmarketcap-api).
+
+---
+
+## Document: Get Top Coins by Market Cap with the CoinMarketCap API
+
+Use the CoinMarketCap listings endpoint for ranked market views and paginated market slices.
+
+URL: https://pro.coinmarketcap.com/api/documentation/guides/get-top-coins-by-market-cap
+
+# Get Top Coins by Market Cap with the CoinMarketCap API
+
+Use this workflow when you want a ranked market list rather than a quote for a known set of assets.
+
+## Best starting endpoint
+
+Start with `GET /v3/cryptocurrency/listings/latest`.
+
+This endpoint is built for sorted, paginated lists of active cryptocurrencies.
+
+## Minimal example
+
+This example fetches the top 10 cryptocurrencies by market cap in USD.
+
+```bash
+curl -G 'https://pro-api.coinmarketcap.com/v3/cryptocurrency/listings/latest' \
+  --data-urlencode 'start=1' \
+  --data-urlencode 'limit=10' \
+  --data-urlencode 'convert=USD' \
+  -H 'Accept: application/json' \
+  -H 'X-CMC_PRO_API_KEY: YOUR_API_KEY'
+```
+
+## What you get back
+
+- `data`: an array of ranked cryptocurrency records
+- `cmc_rank`: CoinMarketCap rank
+- `quote.USD.price`: current price
+- `quote.USD.market_cap`: market cap
+- `quote.USD.volume_24h`: 24h volume
+
+Truncated response showing the first 2 items of a `limit=10` request:
+
+```json
+{
+  "status": {
+    "timestamp": "2025-01-15T12:00:00.000Z",
+    "error_code": 0,
+    "error_message": null,
+    "elapsed": 10,
+    "credit_count": 1
+  },
+  "data": [
+    {
+      "id": 1,
+      "name": "Bitcoin",
+      "symbol": "BTC",
+      "slug": "bitcoin",
+      "cmc_rank": 1,
+      "circulating_supply": 19800000,
+      "max_supply": 21000000,
+      "last_updated": "2025-01-15T12:00:00.000Z",
+      "quote": {
+        "USD": {
+          "price": 99150.42,
+          "volume_24h": 32500000000,
+          "percent_change_24h": 2.34,
+          "market_cap": 1963178316000,
+          "last_updated": "2025-01-15T12:00:00.000Z"
+        }
+      }
+    },
+    {
+      "id": 1027,
+      "name": "Ethereum",
+      "symbol": "ETH",
+      "slug": "ethereum",
+      "cmc_rank": 2,
+      "circulating_supply": 120500000,
+      "max_supply": null,
+      "last_updated": "2025-01-15T12:00:00.000Z",
+      "quote": {
+        "USD": {
+          "price": 3280.15,
+          "volume_24h": 18200000000,
+          "percent_change_24h": 1.62,
+          "market_cap": 395258075000,
+          "last_updated": "2025-01-15T12:00:00.000Z"
+        }
+      }
+    }
+  ]
+}
+```
+
+## Use this when
+
+- You are building a homepage market table
+- You need the top 10, top 100, or another ranked slice of the market
+- You want to paginate through market-wide results
+
+## Common mistakes
+
+- Using `quotes/latest` when you actually need a market-wide ranked list
+- Requesting much more data than you need for the first page of a UI
+- Assuming symbols are enough for follow-up workflows instead of saving the returned `id`
+
+## Good next steps
+
+- Adjust `start` and `limit` for pagination
+- Add filters like `sort`, `cryptocurrency_type`, and market-cap thresholds when you need narrower market views
+- Use [Get latest crypto prices](https://pro.coinmarketcap.com/api/documentation/guides/get-latest-crypto-prices) if you already know the assets you want
+- Use [Best practices](https://pro.coinmarketcap.com/api/documentation/guides/best-practices) if you plan to cache ranked market data for a larger product
+
+---
+
+## Document: Get Latest Crypto Prices with the CoinMarketCap API
+
+Use the CoinMarketCap quotes endpoint when you already know which assets you want prices for.
+
+URL: https://pro.coinmarketcap.com/api/documentation/guides/get-latest-crypto-prices
+
+# Get Latest Crypto Prices with the CoinMarketCap API
+
+Use this workflow when you already know the assets you care about and want their latest market data. If you want a ranked market list instead, use [Get top coins by market cap](https://pro.coinmarketcap.com/api/documentation/guides/get-top-coins-by-market-cap).
+
+## Best starting endpoint
+
+Start with `GET /v3/cryptocurrency/quotes/latest`.
+
+Use it when you already know the asset `id`, `slug`, or `symbol`. For production workflows, `id` is the safest choice.
+
+## Minimal example
+
+This example fetches the latest USD quotes for Bitcoin and Ethereum by CoinMarketCap ID.
+
+```bash
+curl -G 'https://pro-api.coinmarketcap.com/v3/cryptocurrency/quotes/latest' \
+  --data-urlencode 'id=1,1027' \
+  --data-urlencode 'convert=USD' \
+  -H 'Accept: application/json' \
+  -H 'X-CMC_PRO_API_KEY: YOUR_API_KEY'
+```
+
+## What you get back
+
+- `data`: an array of asset records keyed by `id`
+- `quote.USD.price`: the latest price
+- `quote.USD.market_cap`: the latest market cap
+- `quote.USD.volume_24h`: 24h volume
+- `quote.USD.percent_change_*`: recent performance windows
+
+Truncated response for `id=1,1027` (Bitcoin and Ethereum):
+
+```json
+{
+  "status": {
+    "timestamp": "2025-01-15T12:00:00.000Z",
+    "error_code": 0,
+    "error_message": null,
+    "elapsed": 8,
+    "credit_count": 1
+  },
+  "data": [
+    {
+      "id": 1,
+      "name": "Bitcoin",
+      "symbol": "BTC",
+      "slug": "bitcoin",
+      "cmc_rank": 1,
+      "circulating_supply": 19800000,
+      "max_supply": 21000000,
+      "last_updated": "2025-01-15T12:00:00.000Z",
+      "quote": {
+        "USD": {
+          "price": 99150.42,
+          "volume_24h": 32500000000,
+          "percent_change_1h": 0.15,
+          "percent_change_24h": 2.34,
+          "percent_change_7d": -1.05,
+          "market_cap": 1963178316000,
+          "last_updated": "2025-01-15T12:00:00.000Z"
+        }
+      }
+    },
+    {
+      "id": 1027,
+      "name": "Ethereum",
+      "symbol": "ETH",
+      "slug": "ethereum",
+      "cmc_rank": 2,
+      "circulating_supply": 120500000,
+      "max_supply": null,
+      "last_updated": "2025-01-15T12:00:00.000Z",
+      "quote": {
+        "USD": {
+          "price": 3280.15,
+          "volume_24h": 18200000000,
+          "percent_change_1h": -0.08,
+          "percent_change_24h": 1.62,
+          "percent_change_7d": 3.14,
+          "market_cap": 395258075000,
+          "last_updated": "2025-01-15T12:00:00.000Z"
+        }
+      }
+    }
+  ]
+}
+```
+
+## Use this when
+
+- You are building a watchlist or portfolio view
+- You need the latest price for a known set of assets
+- You want to compare a few assets side by side
+
+## Common mistakes
+
+- Using `listings/latest` when you already know the exact assets you need
+- Using `symbol` in production when you should use stable CoinMarketCap `id`
+- Calling the API directly from the browser instead of your backend
+
+## Good next steps
+
+- Use [/v1/cryptocurrency/map](https://pro.coinmarketcap.com/api/documentation/pro-api-reference/cryptocurrency) if you need to look up stable IDs first
+- Use [/v2/cryptocurrency/info](https://pro.coinmarketcap.com/api/documentation/pro-api-reference/cryptocurrency) if you also need metadata such as logos and links
+- Use [Get top coins by market cap](https://pro.coinmarketcap.com/api/documentation/guides/get-top-coins-by-market-cap) if you need a ranked market list instead of known assets
+- Use [API response format, IDs, and timestamps](https://pro.coinmarketcap.com/api/documentation/guides/standards-and-conventions) if you want to understand IDs and response structure
+
+---
+
+## Document: Get Historical Price Data with the CoinMarketCap API
+
+Choose the right CoinMarketCap endpoint for historical quotes and OHLCV candlestick data.
+
+URL: https://pro.coinmarketcap.com/api/documentation/guides/get-historical-price-data
+
+# Get Historical Price Data with the CoinMarketCap API
+
+Use this workflow when you need historical market data for charts, analytics, or backtesting.
+
+## Choose the right endpoint
+
+- Use `GET /v3/cryptocurrency/quotes/historical` when you want a historical quote series
+- Use `GET /v2/cryptocurrency/ohlcv/historical` when you need candlestick data with open, high, low, close, and volume
+
+## Historical quotes example
+
+This example fetches the last 7 daily quote points for Bitcoin in USD.
+
+```bash
+curl -G 'https://pro-api.coinmarketcap.com/v3/cryptocurrency/quotes/historical' \
+  --data-urlencode 'id=1' \
+  --data-urlencode 'count=7' \
+  --data-urlencode 'interval=daily' \
+  --data-urlencode 'convert=USD' \
+  -H 'Accept: application/json' \
+  -H 'X-CMC_PRO_API_KEY: YOUR_API_KEY'
+```
+
+Use this when you want a time series of quote snapshots. Truncated response:
+
+```json
+{
+  "status": {
+    "timestamp": "2025-01-15T12:00:00.000Z",
+    "error_code": 0,
+    "error_message": null,
+    "elapsed": 15,
+    "credit_count": 1
+  },
+  "data": [
+    {
+      "id": 1,
+      "name": "Bitcoin",
+      "symbol": "BTC",
+      "quotes": [
+        {
+          "timestamp": "2025-01-08T23:59:59.999Z",
+          "quote": {
+            "USD": {
+              "price": 96800.00,
+              "volume_24h": 28000000000,
+              "market_cap": 1916640000000,
+              "timestamp": "2025-01-08T23:59:59.999Z"
+            }
+          }
+        },
+        {
+          "timestamp": "2025-01-09T23:59:59.999Z",
+          "quote": {
+            "USD": {
+              "price": 97250.50,
+              "volume_24h": 30500000000,
+              "market_cap": 1925561000000,
+              "timestamp": "2025-01-09T23:59:59.999Z"
+            }
+          }
+        }
+      ]
+    }
+  ]
+}
+```
+
+## OHLCV example
+
+This example fetches 7 daily OHLCV candles for Bitcoin in USD.
+
+```bash
+curl -G 'https://pro-api.coinmarketcap.com/v2/cryptocurrency/ohlcv/historical' \
+  --data-urlencode 'id=1' \
+  --data-urlencode 'time_period=daily' \
+  --data-urlencode 'count=7' \
+  --data-urlencode 'convert=USD' \
+  -H 'Accept: application/json' \
+  -H 'X-CMC_PRO_API_KEY: YOUR_API_KEY'
+```
+
+Use this when you need chart-ready candle data with `open`, `high`, `low`, `close`, and `volume`. Truncated response:
+
+```json
+{
+  "status": {
+    "timestamp": "2025-01-15T12:00:00.000Z",
+    "error_code": 0,
+    "error_message": null,
+    "elapsed": 18,
+    "credit_count": 1
+  },
+  "data": {
+    "id": 1,
+    "name": "Bitcoin",
+    "symbol": "BTC",
+    "quotes": [
+      {
+        "time_open": "2025-01-08T00:00:00.000Z",
+        "time_close": "2025-01-08T23:59:59.999Z",
+        "time_high": "2025-01-08T14:32:00.000Z",
+        "time_low": "2025-01-08T03:15:00.000Z",
+        "quote": {
+          "USD": {
+            "open": 95800.00,
+            "high": 97200.00,
+            "low": 95100.00,
+            "close": 96800.00,
+            "volume": 28000000000,
+            "timestamp": "2025-01-08T23:59:59.999Z"
+          }
+        }
+      }
+    ]
+  }
+}
+```
+
+## What to choose
+
+- Choose `quotes/historical` for historical snapshots and simpler price-series workflows
+- Choose `ohlcv/historical` for candlestick charts and technical-analysis pipelines
+
+## Common mistakes
+
+- Using OHLCV when all you need is a simpler historical quote series
+- Forgetting to specify `count` when you are not sending an explicit time window
+- Using `symbol` in production when `id` would be more stable
+
+## Good next steps
+
+- Use [/v1/cryptocurrency/map](https://pro.coinmarketcap.com/api/documentation/pro-api-reference/cryptocurrency) if you need to look up stable IDs first
+- Use [Get latest crypto prices](https://pro.coinmarketcap.com/api/documentation/guides/get-latest-crypto-prices) if you only need the current state
+- Use [Choose an endpoint](https://pro.coinmarketcap.com/api/documentation/pro-api-reference/endpoint-overview) if you want to compare historical paths with other market-data workflows
+
+---
+
+## Document: Rate limits and troubleshooting
+
+Understand API throttling, common HTTP status codes, and the main error response codes.
+
+URL: https://pro.coinmarketcap.com/api/documentation/guides/errors-and-rate-limits
+
+# Rate limits and troubleshooting
+
+This page covers the rate limiting behavior, HTTP status codes, and structured error codes returned by the CoinMarketCap Pro API. Use it to diagnose failed requests and to design retry logic.
+
+## API request throttling
+
+Use of the CoinMarketCap API is subject to API call rate limiting or "request throttling". This is the number of HTTP calls that can be made simultaneously or within the same minute with your API key before receiving an HTTP 429 "Too Many Requests" throttling error. This limit scales with the [usage tier](https://coinmarketcap.com/api/pricing/) and resets every 60 seconds. See [Best practices](https://pro.coinmarketcap.com/api/documentation/guides/best-practices) for implementation strategies that work well with rate limiting.
+
+## HTTP status codes
+
+The API uses standard HTTP status codes to indicate the success or failure of an API call.
+
+| Status | Meaning | What to do |
+|--------|---------|------------|
+| `400` Bad Request | The server could not process the request, likely due to an invalid argument. | Check query parameters and request body against the endpoint documentation. |
+| `401` Unauthorized | Your request lacks valid authentication credentials. | Verify your API key is correct and included in the `X-CMC_PRO_API_KEY` header. |
+| `402` Payment Required | Your paid subscription plan has an overdue balance. | Pay the balance in the [Developer Portal billing tab](https://pro.coinmarketcap.com/account/plan). |
+| `403` Forbidden | Your API key's service plan does not include this endpoint. | Check the [plan-to-endpoint map](https://coinmarketcap.com/api/pricing/) and upgrade if needed. |
+| `429` Too Many Requests | Rate limit exceeded. | Slow down request frequency (minute limit) or upgrade your plan (daily/monthly limit). |
+| `500` Internal Server Error | An unexpected server issue was encountered. | Retry with exponential backoff. If persistent, check [API status](https://status.coinmarketcap.com/). |
+
+## Error response codes
+
+A `status` object is always included in the JSON response payload for both successful calls and failures when possible. During error scenarios you may reference the `error_code` and `error_message` properties of the status object. One of the API error codes below will be returned if applicable, otherwise the HTTP status code for the general error type is returned.
+
+| HTTP Status | Error Code | Error Message | Resolution |
+|-------------|------------|---------------|------------|
+| 401 | 1001 `API_KEY_INVALID` | This API Key is invalid. | Regenerate your key in the Developer Portal. |
+| 401 | 1002 `API_KEY_MISSING` | API key missing. | Add the `X-CMC_PRO_API_KEY` header to your request. |
+| 402 | 1003 `API_KEY_PLAN_REQUIRES_PAYEMENT` | Your API Key must be activated. | Activate your plan at [pro.coinmarketcap.com/account/plan](https://pro.coinmarketcap.com/account/plan). |
+| 402 | 1004 `API_KEY_PLAN_PAYMENT_EXPIRED` | Your API Key's subscription plan has expired. | Renew your subscription in the Developer Portal. |
+| 403 | 1005 `API_KEY_REQUIRED` | An API Key is required for this call. | Include your API key — this endpoint is not available without one. |
+| 403 | 1006 `API_KEY_PLAN_NOT_AUTHORIZED` | Your API Key subscription plan doesn't support this endpoint. | Upgrade your plan to access this endpoint. |
+| 403 | 1007 `API_KEY_DISABLED` | This API Key has been disabled. | Contact support to resolve the issue. |
+| 429 | 1008 `API_KEY_PLAN_MINUTE_RATE_LIMIT_REACHED` | You've exceeded your API Key's HTTP request rate limit. | Wait 60 seconds for the rate limit to reset, then retry. |
+| 429 | 1009 `API_KEY_PLAN_DAILY_RATE_LIMIT_REACHED` | You've exceeded your API Key's daily rate limit. | Wait for the daily reset or upgrade your plan. |
+| 429 | 1010 `API_KEY_PLAN_MONTHLY_RATE_LIMIT_REACHED` | You've exceeded your API Key's monthly rate limit. | Wait for the monthly reset or upgrade your plan. |
+| 429 | 1011 `IP_RATE_LIMIT_REACHED` | You've hit an IP rate limit. | Reduce concurrent requests from this IP address. |
+
+---
+
+## Document: CoinMarketCap API Common Workflows
+
+Find the right CoinMarketCap API starting point for common workflows like latest prices, historical data, exchange data, and DEX data.
+
+URL: https://pro.coinmarketcap.com/api/documentation/guides/common-workflows
+
+# CoinMarketCap API Common Workflows
+
+Use this page when you know the outcome you want, but you do not need to browse the full API reference yet. Each workflow below points you to the right API family and the pages you will most likely want next.
+
+## Popular workflow guides
+
+- [Get latest crypto prices](/api/documentation/guides/get-latest-crypto-prices): Use the current quotes endpoint when you already know the assets you care about.
+- [Get historical price data](/api/documentation/guides/get-historical-price-data): Choose between quote history and OHLCV candles for charts, analysis, and backtesting.
+- [Get top coins by market cap](/api/documentation/guides/get-top-coins-by-market-cap): Use listings to pull ranked market views and paginated market slices.
+
+## Common starting points
+
+| Workflow | Start here | Typical next step |
+|---|---|---|
+| Show the latest prices for a known set of assets | [Cryptocurrency](https://pro.coinmarketcap.com/api/documentation/pro-api-reference/cryptocurrency) | Start with [Get latest crypto prices](https://pro.coinmarketcap.com/api/documentation/guides/get-latest-crypto-prices) |
+| Show the top coins by market cap | [Cryptocurrency](https://pro.coinmarketcap.com/api/documentation/pro-api-reference/cryptocurrency) | Start with [Get top coins by market cap](https://pro.coinmarketcap.com/api/documentation/guides/get-top-coins-by-market-cap) |
+| Build historical charts or backtests | [Cryptocurrency](https://pro.coinmarketcap.com/api/documentation/pro-api-reference/cryptocurrency) and [OHLCV](https://pro.coinmarketcap.com/api/documentation/pro-api-reference/ohlcv) | Start with [Get historical price data](https://pro.coinmarketcap.com/api/documentation/guides/get-historical-price-data) |
+| Look up IDs, metadata, or logos | [Cryptocurrency](https://pro.coinmarketcap.com/api/documentation/pro-api-reference/cryptocurrency) and [Exchange](https://pro.coinmarketcap.com/api/documentation/pro-api-reference/exchange) | Use `map` and `info` before building downstream requests |
+| Monitor exchanges and market pairs | [Exchange](https://pro.coinmarketcap.com/api/documentation/pro-api-reference/exchange) | Start with exchange `info`, `listings/latest`, or `market-pairs/latest` |
+| Work with DEX tokens, pools, and on-chain activity | [Token](https://pro.coinmarketcap.com/api/documentation/pro-api-reference/token), [Platform](https://pro.coinmarketcap.com/api/documentation/pro-api-reference/platform), and [OHLCV](https://pro.coinmarketcap.com/api/documentation/pro-api-reference/ohlcv) | Use token and pair data first, then add OHLCV or liquidity views |
+| Add market-wide context to your app | [Global Metrics](https://pro.coinmarketcap.com/api/documentation/pro-api-reference/global-metrics), [CMC Index](https://pro.coinmarketcap.com/api/documentation/pro-api-reference/cmc-index), [Content](https://pro.coinmarketcap.com/api/documentation/pro-api-reference/content), and [Community](https://pro.coinmarketcap.com/api/documentation/pro-api-reference/community) | Combine global metrics with content, headlines, or community trend data |
+| Convert values across crypto and fiat currencies | [Tools](https://pro.coinmarketcap.com/api/documentation/pro-api-reference/tools) | Start with `price-conversion` |
+
+## Choose the right request pattern
+
+- Use `quotes/latest` when you already know the assets you care about and want current market data.
+- Use `listings/latest` when you want a ranked or filtered list across the market.
+- Use `map` first when you want stable IDs for downstream requests.
+- Use `info` when you need descriptive metadata such as logos, links, and profiles.
+- Use historical endpoints when your product needs charts, time-series views, or backtesting.
+
+## Before you ship
+
+These pages answer the questions most teams run into after the first successful call:
+
+- [Authentication](https://pro.coinmarketcap.com/api/documentation/guides/authentication)
+- [API response format, IDs, and timestamps](https://pro.coinmarketcap.com/api/documentation/guides/standards-and-conventions)
+- [Rate limits, errors, and troubleshooting](https://pro.coinmarketcap.com/api/documentation/guides/errors-and-rate-limits)
+- [Best practices](https://pro.coinmarketcap.com/api/documentation/guides/best-practices)
+- [Choose an endpoint](https://pro.coinmarketcap.com/api/documentation/pro-api-reference/endpoint-overview)
+
+---
+
+## Document: Best Practices
+
+Best practices for using the CoinMarketCap API efficiently, reliably, and with stable identifiers.
+
+URL: https://pro.coinmarketcap.com/api/documentation/guides/best-practices
+
+# Best Practices
+
+This page covers the patterns that help CoinMarketCap API integrations stay stable, efficient, and cost-effective at scale. Follow these recommendations before shipping to production, especially if you serve a large user base.
+
+## Use CoinMarketCap ID instead of cryptocurrency symbol
+
+Utilizing common cryptocurrency symbols to reference cryptocurrencies on the API is easy and convenient but brittle. Many cryptocurrencies have the same symbol — for example, there are currently multiple cryptocurrencies that commonly refer to themselves by the symbol HOT. Cryptocurrency symbols also often change with cryptocurrency rebrands. When fetching cryptocurrency by a symbol that matches several active cryptocurrencies, the API returns the one with the highest market cap at the time of the query.
+
+To ensure you always target the cryptocurrency you expect, use permanent CoinMarketCap IDs. These IDs are used reliably by numerous mission critical platforms and *never change*.
+
+Call `/cryptocurrency/map` to receive a list of all active currencies mapped to the unique `id` property. This map also includes other typical identifying properties like `name`, `symbol` and platform `token_address` that can be cross referenced. In cryptocurrency calls you would then send, for example `id=1027`, instead of `symbol=ETH`.
+
+> **Recommendation:** Any production code should use CoinMarketCap IDs for cryptocurrencies, exchanges, and markets to future-proof your integration.
+
+## Use the right endpoints for the job
+
+`/cryptocurrency/listings/latest` and `/cryptocurrency/quotes/latest` return the same crypto data but in different formats. The former is for requesting paginated and ordered lists of *all* cryptocurrencies while the latter is for selectively requesting only the specific cryptocurrencies you require. Many endpoints follow this pattern — let the design of these endpoints work for you.
+
+| If you need... | Use this |
+|----------------|----------|
+| A ranked or filtered market list | `listings/latest` |
+| Data for a known set of assets | `quotes/latest` |
+| Stable IDs for downstream requests | `map` |
+| Metadata such as logos and links | `info` |
+
+## Implement a caching strategy if needed
+
+There are standard legal data safeguards built into the [Commercial User Terms](https://pro.coinmarketcap.com/user-agreement-commercial) that application developers should keep in mind. These Terms help prevent unauthorized scraping and redistributing of CMC data but are intentionally worded to allow legitimate local caching of market data to support the operation of your application. If your application has a significant user base and you are concerned with staying within the call credit and API throttling limits of your subscription plan, consider implementing a data caching strategy.
+
+For example, instead of making a `/cryptocurrency/quotes/latest` call every time one of your application's users needs to fetch market rates, you could pre-fetch and cache the market data your product actually needs on a schedule. If your app only shows a top-market view, a `/cryptocurrency/listings/latest?limit=5000` request may be enough. If you need broader market coverage, paginate through multiple listings requests or combine listings with targeted quotes requests. Then, anytime one of your application's users needs to load a custom list of cryptocurrencies, you could simply pull this cached market data from your local store without the overhead of additional calls.
+
+## Code defensively for a robust integration
+
+Since the API is versioned, any breaking request or response format change would only be introduced through new versions of each endpoint. However, existing endpoints may still introduce new convenience properties over time.
+
+- Parse the API response as JSON using a proper JSON parser, not regular expressions or string matching.
+- Explicitly parse only the response properties you require so that new fields returned in the future are ignored.
+- Add robust field validation to your response parsing. Wrap complex field parsing (like dates) in try/catch statements to minimize the impact of unexpected values.
+- Implement retry with exponential backoff for your REST API call logic. If your HTTP request is rate limited (HTTP 429) or encounters an unexpected server-side condition (HTTP 5xx), your code should automatically recover and try again. Libraries: [node-retry](https://github.com/tim-kos/node-retry) for Node, [backoff](https://github.com/litl/backoff) for Python.
+
+## Reach out and upgrade your plan
+
+If you're uncertain how to best implement the CoinMarketCap API in your application or your needs outgrow the current self-serve subscription tiers, contact api@coinmarketcap.com. The team can review your needs and budget and may be able to tailor a custom enterprise plan.
+
+---
+
+## Document: API Authentication
+
+Learn how to authenticate CoinMarketCap Pro API requests with your API key.
+
+URL: https://pro.coinmarketcap.com/api/documentation/guides/authentication
+
+# API Authentication
+
+Every request to the CoinMarketCap Pro API requires a valid API key. This guide covers how to get a key, how to pass it with your requests, and how usage credits are tracked.
+
+## Acquiring an API key
+
+All HTTP requests made against the CoinMarketCap Pro API must be validated with an API key. If you don't have one yet, visit the [API Developer Portal](https://pro.coinmarketcap.com/signup) to register for one.
+
+## Using your API key
+
+You may use any *server side* programming language that can make HTTP requests to target the CoinMarketCap Pro API. Pro API requests should target domain `https://pro-api.coinmarketcap.com`.
+
+This page covers API key authentication for the Pro API. Other access models documented elsewhere in this site, such as x402, may use different authentication or payment flows.
+
+You can supply your API key in REST API calls in one of two ways:
+
+1. **Preferred method:** Via a custom header named `X-CMC_PRO_API_KEY`
+2. **Convenience method:** Via a query string parameter named `CMC_PRO_API_KEY`
+
+> **Security warning:** It's important to secure your API key against public access. The custom header option is strongly recommended over the querystring option for passing your API key in a production environment.
+
+## API key usage credits
+
+Most API plans include a daily and monthly limit or "hard cap" to the number of data calls that can be made. This usage is tracked as API "call credits" which are incremented 1:1 against successful (HTTP Status 200) data calls made with your key with these exceptions:
+
+- Account management endpoints, usage stats endpoints, and error responses are not included in this limit.
+- **Paginated endpoints:** List-based endpoints track an additional call credit for every 100 data points returned (rounded up) beyond the 100 data point default. Lightweight `/map` endpoints are not included in this limit and always count as 1 credit. See individual endpoint documentation for more details.
+- **Bundled API calls:** Many endpoints support [resource and currency conversion bundling](https://pro.coinmarketcap.com/api/documentation/guides/standards-and-conventions). Bundled resources are also tracked as 1 call credit for every 100 resources returned (rounded up). Optional currency conversion bundling using the `convert` parameter also increments an additional API call credit for every conversion requested beyond the first.
+
+You can visit the [Developer Portal](https://pro.coinmarketcap.com/signup) to view live stats on your API key usage and limits including the number of credits used for each call. You can also find call credit usage in the JSON response for each API call. See the [`status` object](https://pro.coinmarketcap.com/api/documentation/guides/standards-and-conventions) for details. You may also use the `/key/info` endpoint to quickly review your usage and when daily/monthly credits reset directly from the API.
+
+> **Note:** "day" and "month" credit usage periods are defined relative to your API subscription. For example, if your monthly subscription started on the 5th at 5:30am, this billing anchor is also when your monthly credits refresh each month. The free Basic tier resets each day at UTC midnight and each calendar month at UTC midnight.
+
+---
+
+## Document: API response format, IDs, and timestamps
+
+This response-format and identifier topic is maintained in Guides.
+
+URL: https://pro.coinmarketcap.com/api/documentation/api-reference/standards-and-conventions
+
+# API response format, IDs, and timestamps
+
+This topic is maintained in the Guides section so there is one current version of the content.
+
+## Go to the guide
+
+- [API response format, IDs, and timestamps](https://pro.coinmarketcap.com/api/documentation/guides/standards-and-conventions)
+- [Best practices](https://pro.coinmarketcap.com/api/documentation/guides/best-practices)
+- [Choose an Endpoint](https://pro.coinmarketcap.com/api/documentation/pro-api-reference/endpoint-overview)
+
+This page remains available as a shortcut for older links into the reference section.
+
+---
+
+## Document: Quick start
+
+This quick-start topic is maintained in Guides.
+
+URL: https://pro.coinmarketcap.com/api/documentation/api-reference/quick-start
+
+# Quick start
+
+This topic is maintained in the Guides section so there is one current version of the content.
+
+## Go to the guide
+
+- [Quick Start](https://pro.coinmarketcap.com/api/documentation/guides/quick-start)
+- [Common Workflows](https://pro.coinmarketcap.com/api/documentation/guides/common-workflows)
+- [Choose an Endpoint](https://pro.coinmarketcap.com/api/documentation/pro-api-reference/endpoint-overview)
+
+This page remains available as a shortcut for older links into the reference section.
+
+---
+
+## Document: API reference
+
+This shortcut page is kept for older links into the API reference.
+
+URL: https://pro.coinmarketcap.com/api/documentation/api-reference/introduction
+
+# API reference
+
+This page is kept as a shortcut for older links. Most readers should start with [Which API Endpoint Should I Use?](https://pro.coinmarketcap.com/api/documentation/pro-api-reference/endpoint-overview).
+
+## Start here
+
+- Use [Choose an Endpoint](https://pro.coinmarketcap.com/api/documentation/pro-api-reference/endpoint-overview) if you want help picking the right API family
+- Use [Quick Start](https://pro.coinmarketcap.com/api/documentation/guides/quick-start) if you want to make your first production request
+- Use [Common Workflows](https://pro.coinmarketcap.com/api/documentation/guides/common-workflows) if you want to start from a task
+- Use [API response format, IDs, and timestamps](https://pro.coinmarketcap.com/api/documentation/guides/standards-and-conventions) if you want response-model and identifier guidance
+
+## Jump into the reference
+
+- [Cryptocurrency](https://pro.coinmarketcap.com/api/documentation/pro-api-reference/cryptocurrency)
+- [Exchange](https://pro.coinmarketcap.com/api/documentation/pro-api-reference/exchange)
+- [Token](https://pro.coinmarketcap.com/api/documentation/pro-api-reference/token)
+- [OHLCV](https://pro.coinmarketcap.com/api/documentation/pro-api-reference/ohlcv)
+- [Tools](https://pro.coinmarketcap.com/api/documentation/pro-api-reference/tools)
+
+---
+
+## Document: Rate limits, errors, and troubleshooting
+
+This rate-limit and troubleshooting topic is maintained in Guides.
+
+URL: https://pro.coinmarketcap.com/api/documentation/api-reference/errors-and-rate-limits
+
+# Rate limits, errors, and troubleshooting
+
+This topic is maintained in the Guides section so there is one current version of the content.
+
+## Go to the guide
+
+- [Rate limits, errors, and troubleshooting](https://pro.coinmarketcap.com/api/documentation/guides/errors-and-rate-limits)
+- [Best practices](https://pro.coinmarketcap.com/api/documentation/guides/best-practices)
+- [Choose an Endpoint](https://pro.coinmarketcap.com/api/documentation/pro-api-reference/endpoint-overview)
+
+This page remains available as a shortcut for older links into the reference section.
+
+---
+
+## Document: Best practices
+
+This best-practices topic is maintained in Guides.
+
+URL: https://pro.coinmarketcap.com/api/documentation/api-reference/best-practices
+
+# Best practices
+
+This topic is maintained in the Guides section so there is one current version of the content.
+
+## Go to the guide
+
+- [Best practices](https://pro.coinmarketcap.com/api/documentation/guides/best-practices)
+- [API response format, IDs, and timestamps](https://pro.coinmarketcap.com/api/documentation/guides/standards-and-conventions)
+- [Choose an Endpoint](https://pro.coinmarketcap.com/api/documentation/pro-api-reference/endpoint-overview)
+
+This page remains available as a shortcut for older links into the reference section.
+
+---
+
+## Document: Authentication
+
+This authentication topic is maintained in Guides.
+
+URL: https://pro.coinmarketcap.com/api/documentation/api-reference/authentication
+
+# Authentication
+
+This topic is maintained in the Guides section so there is one current version of the content.
+
+## Go to the guide
+
+- [Authentication](https://pro.coinmarketcap.com/api/documentation/guides/authentication)
+- [Quick Start](https://pro.coinmarketcap.com/api/documentation/guides/quick-start)
+- [Choose an Endpoint](https://pro.coinmarketcap.com/api/documentation/pro-api-reference/endpoint-overview)
+
+This page remains available as a shortcut for older links into the reference section.
+
+---
+
+## Document: CoinMarketCap x402
+
+Access CoinMarketCap market data with x402 pay-per-request flows on Base.
+
+URL: https://pro.coinmarketcap.com/api/documentation/ai-agent-hub/x402
+
+# CoinMarketCap x402
+
+> Pay-per-request crypto market data powered by the x402 protocol. Access CoinMarketCap endpoints instantly with on-chain USDC payment — no API key or subscription required.
+
+Pricing, features, and availability may change without prior notice. For production workloads, we recommend using the standard [CoinMarketCap Pro API](https://coinmarketcap.com/api/documentation/v1/) with an API key subscription.
+
+## What is x402?
+
+x402 is an open payment protocol developed by Coinbase that enables instant, automatic stablecoin payments directly over HTTP. Instead of managing API keys and subscriptions, you pay per request using USDC on Base. Learn more at the [x402 documentation](https://docs.cdp.coinbase.com/x402/welcome).
+
+## How it works
+
+Make a request to any x402-enabled endpoint. The server responds with HTTP 402 and a `Payment-Required` header containing the payment details (amount, network, asset, recipient).
+
+Your wallet signs a USDC `transferWithAuthorization` (EIP-3009) message for the requested amount. This is an off-chain signature — no on-chain transaction occurs yet.
+
+Resend the original request with the signed `PAYMENT-SIGNATURE` header attached. The facilitator verifies the signature, the server processes your request, and you receive the data. The on-chain USDC transfer is only executed upon successful data delivery.
+
+:::note
+x402 endpoints do not require `X-CMC_PRO_API_KEY` or any other authentication header. Payment is the authentication.
+:::
+
+## MCP endpoint
+
+The `/x402/mcp` endpoint exposes a [Model Context Protocol](https://modelcontextprotocol.io/) server that supports x402 payments at the HTTP transport layer. This enables AI agents and LLM clients (e.g., Claude, Cursor) to discover and call CMC data tools with automatic per-request payment.
+
+**Connection URL:**
+
+```text
+https://mcp.coinmarketcap.com/x402/mcp
+```
+
+**Transport:** Streamable HTTP (POST to `/x402/mcp`)
+
+To connect, use any MCP-compatible client with an x402-aware HTTP transport that intercepts 402 responses, signs the payment, and retries. The MCP server exposes the same data tools as the REST endpoints below, and supports automatic tool discovery via the standard MCP `tools/list` method.
+
+For standard MCP documentation, see [CMC MCP](https://pro.coinmarketcap.com/api/documentation/ai-agent-hub/mcp).
+
+## Base URL
+
+All x402 requests use the following base URL:
+
+```text
+https://pro-api.coinmarketcap.com
+```
+
+## Supported REST endpoints
+
+| Endpoint | Method | Path | Description |
+| --- | --- | --- | --- |
+| [DEX Search](https://coinmarketcap.com/api/documentation/v1/#operation/search) | GET | `/x402/v1/dex/search` | Search for DEX tokens by keyword (name, symbol, or contract address). |
+| [Cryptocurrency Quotes Latest](https://coinmarketcap.com/api/documentation/v1/#operation/getV2CryptocurrencyQuotesLatest) | GET | `/x402/v3/cryptocurrency/quotes/latest` | Get the latest market quotes for one or more cryptocurrencies. |
+| [Cryptocurrency Listing Latest](https://coinmarketcap.com/api/documentation/v1/#operation/getV1CryptocurrencyListingsLatest) | GET | `/x402/v3/cryptocurrency/listings/latest` | Get a paginated list of all active cryptocurrencies with latest market data, ranked by market cap. |
+| [DEX Pairs Quotes Latest](https://coinmarketcap.com/api/documentation/v1/#operation/getLatestPairsQuotes) | GET | `/x402/v4/dex/pairs/quotes/latest` | Get the latest quotes and trading data for specific DEX trading pairs. |
+
+All parameters supported by the standard CoinMarketCap Pro API endpoints are also supported in their x402 counterparts. Refer to the linked documentation for full parameter details, limits, and response schemas. You can download the full list of IDs in a [CSV file here](https://s3.coinmarketcap.com/generated/core/crypto/idmaps.csv).
+
+## Request examples
+
+**Example 1**: Search DEX tokens by keyword:
+
+```text
+GET https://pro-api.coinmarketcap.com/x402/v1/dex/search?q=pepe
+```
+
+**Example 2**: Get latest quotes for Bitcoin and Ethereum by CoinMarketCap ID:
+
+```text
+GET https://pro-api.coinmarketcap.com/x402/v3/cryptocurrency/quotes/latest?id=1,1027
+```
+
+**Example 3**: Get the top 10 cryptocurrencies by market cap:
+
+```text
+GET https://pro-api.coinmarketcap.com/x402/v3/cryptocurrency/listings/latest?start=1&limit=10
+```
+
+**Example 4**: Get latest DEX pair quotes:
+
+```text
+GET https://pro-api.coinmarketcap.com/x402/v4/dex/pairs/quotes/latest?pair_address=0x...
+```
+
+**Example 5**: Using curl with a pre-signed payment header:
+
+```bash
+curl --request GET \
+  --url 'https://pro-api.coinmarketcap.com/x402/v1/dex/search?q=bnb' \
+  -H 'PAYMENT-SIGNATURE: {{paymentSignature}}'
+```
+
+## Pricing and payment
+
+**Current price: $0.01 USDC per API request** across all supported endpoints.
+
+Pricing is subject to change without prior notice. Always parse the `Payment-Required` response header for the current amount before signing.
+
+**Supported payment network:**
+
+- **Base** (Chain ID: 8453)
+
+**Payment asset:**
+
+- **USDC** on Base (`0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913`)
+
+**Payment method:**
+
+- EIP-3009 `transferWithAuthorization` — your wallet signs an off-chain authorization, and the facilitator executes the on-chain transfer only upon successful data delivery.
+
+## 402 response format
+
+When a request is made without a valid `PAYMENT-SIGNATURE`, the server returns HTTP 402 with a base64-encoded `Payment-Required` header:
+
+```json
+{
+  "x402Version": 2,
+  "error": "Payment required",
+  "resource": {
+    "url": "/x402/v1/dex/search",
+    "description": "..."
+  },
+  "accepts": [
+    {
+      "scheme": "exact",
+      "network": "eip155:8453",
+      "asset": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
+      "amount": "10000",
+      "payTo": "0x271189c860DB25bC43173B0335784aD68a680908",
+      "maxTimeoutSeconds": 30,
+      "extra": {
+        "name": "USD Coin",
+        "version": "2"
+      }
+    }
+  ]
+}
+```
+
+| Field | Description |
+| --- | --- |
+| `scheme` | Payment scheme, currently `exact` (EIP-3009 transferWithAuthorization) |
+| `network` | Target chain in CAIP-2 format (`eip155:8453` = Base Mainnet) |
+| `asset` | USDC contract address on Base |
+| `amount` | Payment amount in smallest unit (10000 = $0.01 USDC, 6 decimals) |
+| `payTo` | Recipient address for the payment |
+| `maxTimeoutSeconds` | Maximum validity window for the signed authorization |
+| `extra.name` | EIP-712 domain name for the token (must be `"USD Coin"` for USDC on Base) |
+| `extra.version` | EIP-712 domain version for the token |
+
+## Quick start
+
+### Using the x402 TypeScript SDK
+
+Install dependencies:
+
+```bash
+npm install @x402/axios @x402/evm viem
+```
+
+Example — fetch DEX search results with automatic x402 payment:
+
+```typescript
+import { createX402AxiosClient } from "@x402/axios";
+import { ExactEvmScheme, toClientEvmSigner } from "@x402/evm";
+import { privateKeyToAccount } from "viem/accounts";
+import { createPublicClient, http } from "viem";
+import { base } from "viem/chains";
+
+const account = privateKeyToAccount("0xYOUR_PRIVATE_KEY");
+const publicClient = createPublicClient({ chain: base, transport: http() });
+const signer = toClientEvmSigner(account, publicClient);
+
+const client = createX402AxiosClient({
+  schemes: [new ExactEvmScheme(signer)],
+});
+
+const response = await client.get(
+  "https://pro-api.coinmarketcap.com/x402/v1/dex/search",
+  { params: { q: "bnb" } },
+);
+
+console.log(response.data);
+```
+
+### Using curl (manual flow)
+
+```bash
+# Step 1: Get the 402 response with payment requirements
+curl -s -D - 'https://pro-api.coinmarketcap.com/x402/v1/dex/search?q=bnb'
+
+# Step 2: Sign the payment using your x402 client (SDK or custom implementation)
+
+# Step 3: Retry with the payment signature
+curl --request GET \
+  --url 'https://pro-api.coinmarketcap.com/x402/v1/dex/search?q=bnb' \
+  -H 'PAYMENT-SIGNATURE: <your-signed-payment>'
+```
+
+## Important notes
+
+- **No API key required** — x402 payment replaces traditional API key authentication.
+- **Pay only on success** — the on-chain USDC transfer is executed only when the server successfully returns data. If the server encounters an error, no payment is deducted.
+- **Authorization expiry** — signed authorizations expire after `maxTimeoutSeconds` (typically 30s). Unused authorizations are never submitted on-chain.
+- **EIP-712 domain** — when constructing the `transferWithAuthorization` signature, use `name: "USD Coin"` and `version: "2"` for the USDC token domain on Base.
+- **Rate limits** — x402 endpoints may have separate rate limits from the standard Pro API. Refer to the `Payment-Required` response for the latest terms.
+
+---
+
+## Document: CoinMarketCap MCP for Windsurf
+
+Connect CoinMarketCap MCP to Windsurf for real-time crypto market data and agent-assisted development.
+
+URL: https://pro.coinmarketcap.com/api/documentation/ai-agent-hub/windsurf
+
+# CoinMarketCap MCP for Windsurf
+
+Use the CoinMarketCap MCP server in Windsurf to give Cascade access to live crypto prices, market data, technical analysis, and more.
+
+## Setup
+
+1. **Get your API key**
+
+   Sign up or log in at [pro.coinmarketcap.com](https://pro.coinmarketcap.com/login) to get your API key.
+
+1. **Open MCP configuration**
+
+   Navigate to **Windsurf Settings > MCP Servers** or open the MCP configuration file directly.
+
+1. **Add the CoinMarketCap MCP server**
+
+   Add the following to your MCP configuration:
+
+   ```json
+   {
+     "mcpServers": {
+       "cmc-mcp": {
+         "url": "https://mcp.coinmarketcap.com/mcp",
+         "headers": {
+           "X-CMC-MCP-API-KEY": "your-api-key"
+         }
+       }
+     }
+   }
+   ```
+
+   Replace `your-api-key` with your actual CoinMarketCap API key.
+
+1. **Verify the connection**
+
+   Open Cascade and ask: **"What tools do you have available?"**
+
+   You should see CoinMarketCap tools listed, such as `search_cryptos`, `get_crypto_quotes_latest`, and `get_global_metrics_latest`.
+
+## Install Skills (optional)
+
+Install CoinMarketCap skills for structured market analysis and token research workflows:
+
+```bash
+npx skills add https://github.com/coinmarketcap-official/skills-for-ai-agents-by-CoinMarketCap
+```
+
+This adds skills for [market reports](https://pro.coinmarketcap.com/api/documentation/ai-agent-hub/skills/market-report), [crypto research](https://pro.coinmarketcap.com/api/documentation/ai-agent-hub/skills/crypto-research), and [API integration](https://pro.coinmarketcap.com/api/documentation/ai-agent-hub/skills/cmc-api-crypto).
+
+## What you can do
+
+Once connected, ask Cascade things like:
+
+- "What's the current price of Bitcoin?"
+- "Generate a daily crypto market report"
+- "Do due diligence on Arbitrum"
+- "What are today's biggest gainers?"
+- "Build me a price alert script using the CMC API"
+- "Compare trading volume across top exchanges"
+
+---
+
+## Document: CoinMarketCap MCP
+
+Connect to the CoinMarketCap Model Context Protocol server for live crypto market data and analysis tools.
+
+URL: https://pro.coinmarketcap.com/api/documentation/ai-agent-hub/mcp
+
+# CoinMarketCap MCP
+
+We have 12 professional tools to provide comprehensive cryptocurrency market analysis, like analyze price trends, assess market sentiment, track hot narratives, monitor on-chain data, identify technical signals, and more.
+
+## Market data
+
+- **Search Cryptocurrencies** — Fuzzy search by name/symbol/slug
+- **Live Quotes** — Real-time price, market cap, volume, percentage changes
+- **Global Market Metrics** — Total market cap, 24h volume, Fear & Greed Index, Altcoin Season gauge, BTC/ETH dominance
+
+## Technical analysis
+
+- **Crypto Technical Analysis** — MA, EMA, MACD, RSI, Fibonacci retracement/extension, support/resistance levels
+- **Market Cap Technical Analysis** — Technical indicators for overall crypto market capitalization
+
+## Information and news
+
+- **Crypto Info** — Logo, description, official website, whitepaper, social media links
+- **Latest News** — Get recent news for specific cryptocurrencies
+- **Concept Search** — Semantic search for crypto concepts, FAQs, definitions
+- **Trending Narratives** — Hot market trends, narrative sectors, and associated tokens
+
+## Advanced metrics
+
+- **On-Chain Metrics** — Address distribution by holding value/time, whale vs retail, average transaction fees
+- **Derivatives Data** — Global leverage, open interest, funding rates, liquidation data
+- **Macro Events** — Upcoming economic events that may impact the market
+
+## Usage
+
+The current MCP endpoint is [https://mcp.coinmarketcap.com/mcp](https://mcp.coinmarketcap.com/mcp)
+
+Header-based API key authentication is the verified setup used throughout this docs set. If you are integrating through source code or an MCP client configuration file, include the `X-CMC-MCP-API-KEY` header as shown below.
+
+Some MCP clients may also support OAuth-based flows, but treat that as client-specific behavior and verify it in your environment.
+
+```json
+{
+  "mcpServers": {
+    "cmc-mcp": {
+      "url": "https://mcp.coinmarketcap.com/mcp",
+      "headers": {
+        "X-CMC-MCP-API-KEY": "xxxx"
+      }
+    }
+  }
+}
+```
+
+Obtaining an API key through [https://pro.coinmarketcap.com/login](https://pro.coinmarketcap.com/login)
+
+Log in or register, copy the API key under the dashboard.
+
+## On-chain data (WIP)
+
+The data available at present is limited, and we will carry out a comprehensive upgrade to deliver multi-market dex trading and on-chain data, including token information, transaction data, security metrics, K-line (candlestick) data, related pool information, and featured ranking data.
+
+It covers data from hundreds of DEXs across multiple blockchain ecosystems such as Ethereum, Solana, and BNB Chain (BSC), with standardized data parsing and processing.
+
+AI can leverage these tools to access both real-time and historical data for use cases including strategy backtesting, market monitoring, and analytics.
+
+---
+
+## Document: CoinMarketCap MCP for Cursor
+
+Connect CoinMarketCap MCP to Cursor for real-time crypto market data and agent-assisted development.
+
+URL: https://pro.coinmarketcap.com/api/documentation/ai-agent-hub/cursor
+
+# CoinMarketCap MCP for Cursor
+
+Use the CoinMarketCap MCP server in Cursor to give your AI assistant access to live crypto prices, market data, technical analysis, and more — directly in your editor.
+
+## Setup
+
+1. **Get your API key**
+
+   Sign up or log in at [pro.coinmarketcap.com](https://pro.coinmarketcap.com/login) to get your API key.
+
+1. **Open MCP settings**
+
+   Use `Cmd + Shift + P` (macOS) or `Ctrl + Shift + P` (Windows/Linux) to open the command palette. Search for **"Open MCP settings"** and select it.
+
+1. **Add the CoinMarketCap MCP server**
+
+   In the `mcp.json` file, add:
+
+   ```json
+   {
+     "mcpServers": {
+       "cmc-mcp": {
+         "url": "https://mcp.coinmarketcap.com/mcp",
+         "headers": {
+           "X-CMC-MCP-API-KEY": "your-api-key"
+         }
+       }
+     }
+   }
+   ```
+
+   Replace `your-api-key` with your actual CoinMarketCap API key.
+
+1. **Verify the connection**
+
+   In Cursor's chat, ask: **"What tools do you have available?"**
+
+   You should see CoinMarketCap tools listed, such as `search_cryptos`, `get_crypto_quotes_latest`, and `get_global_metrics_latest`.
+
+## Install Skills (optional)
+
+Install CoinMarketCap skills to give Cursor structured workflows for market analysis and token research:
+
+```bash
+npx skills add https://github.com/coinmarketcap-official/skills-for-ai-agents-by-CoinMarketCap
+```
+
+This adds skills for [market reports](https://pro.coinmarketcap.com/api/documentation/ai-agent-hub/skills/market-report), [crypto research](https://pro.coinmarketcap.com/api/documentation/ai-agent-hub/skills/crypto-research), and [API integration](https://pro.coinmarketcap.com/api/documentation/ai-agent-hub/skills/cmc-api-crypto).
+
+## What you can do
+
+Once connected, ask Cursor things like:
+
+- "What's the current price of Bitcoin?"
+- "Give me a market report"
+- "Research Solana — fundamentals, holders, technicals"
+- "Compare BTC, ETH, and SOL performance"
+- "What are the trending crypto narratives right now?"
+- "Write a function to fetch the top 100 coins by market cap using the CMC API"
+
+---
+
+## Document: CoinMarketCap CLI
+
+Use the CoinMarketCap CLI for terminal-native crypto data access, scripting, and agent workflows.
+
+URL: https://pro.coinmarketcap.com/api/documentation/ai-agent-hub/cmc-cli
+
+# CoinMarketCap CLI
+
+Use the CoinMarketCap CLI when you want stable, shell-native access to CoinMarketCap data for scripts, automation, and terminal workflows.
+
+## When to use CMC CLI
+
+- Choose **CMC CLI** when you want terminal-native workflows, machine-readable output, CSV export, and repeatable commands that fit well into shell scripts or agent runs.
+
+## Prerequisites
+
+- A CoinMarketCap API key from [pro.coinmarketcap.com](https://pro.coinmarketcap.com/login)
+- A supported install path such as Homebrew or the shell installer
+- Optional: `jq` if you want to inspect JSON examples in the terminal
+
+## Install and authenticate
+
+1. **Install CMC CLI**
+
+   Use the install path that best fits your environment:
+
+   ```bash
+   brew install coinmarketcap-official/CoinMarketCap-CLI/cmc
+   ```
+
+   Or use the shell installer:
+
+   ```bash
+   curl -sSfL https://raw.githubusercontent.com/coinmarketcap-official/CoinMarketCap-CLI/main/install.sh | sh
+   ```
+
+1. **Authenticate**
+
+   The simplest path is interactive auth:
+
+   ```bash
+   cmc auth
+   ```
+
+   For automation or ephemeral environments, you can also use environment variables:
+
+   ```bash
+   CMC_API_KEY=your-key cmc price --id 1 -o json
+   ```
+
+1. **Verify the setup**
+
+   Check the active config and then fetch a live quote:
+
+   ```bash
+   cmc status -o json
+   cmc price --id 1 -o json
+   ```
+
+## Quick start
+
+Use these commands to see the CLI value quickly:
+
+```bash
+cmc resolve --id 1
+cmc price --id 1 --with-info --with-chain-stats -o json
+cmc search --chain ethereum --address 0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2
+cmc history --id 1 --days 30 --dry-run -o json
+```
+
+## What you can do
+
+| Need | Use | Notes |
+|---|---|---|
+| Exact asset lookup | `resolve` | Prefer `--id` or `--slug` when determinism matters. |
+| Quotes and enrichments | `price` | Add `--with-info` or `--with-chain-stats` when you need more context. |
+| Search and discovery | `search` | Works for name, symbol, and chain-scoped address discovery. |
+| Market scans | `markets`, `metrics`, `pairs` | Good for list views, rankings, and broader market context. |
+| Time series | `history` | Supports daily plus selected paid-plan intervals. |
+| Trends and content | `trending`, `top-gainers-losers`, `news` | Useful for narratives, movers, and recent coverage. |
+| Live monitoring | `monitor` | Polling only, not websocket streaming. |
+| Interactive inspection | `tui` | Built for human terminal workflows rather than scripting. |
+
+## Output and automation
+
+- Most data commands default to compact JSON.
+- Use `-o table` when you want human-readable terminal output.
+- Use `--dry-run` on data commands to preview the upstream request without sending it.
+- Selected commands support CSV export when you want a file artifact instead of JSON.
+- For deterministic automation, resolve once and reuse canonical IDs downstream.
+
+```bash
+cmc price --id 1 --dry-run -o json > price.json 2> price.log
+cmc markets --limit 100 --export top100.csv
+```
+
+## Interactive terminal workflows
+
+The CLI also supports terminal-native monitoring and TUI flows:
+
+```bash
+cmc monitor --id 1,1027 --interval 60s
+cmc tui
+```
+
+Use these for live human inspection. For scripts, automation, or agent runs, prefer the non-interactive data commands.
+
+## Notes
+
+- Prefer explicit IDs or slugs over shorthand symbols in high-trust workflows.
+- Historical hourly and 5-minute intervals may require a paid CoinMarketCap plan.
+- `monitor` is polling-based, not streaming.
+
+## Source
+
+- GitHub: [coinmarketcap-official/CoinMarketCap-CLI](https://github.com/coinmarketcap-official/CoinMarketCap-CLI)
+
+---
+
+## Document: CoinMarketCap MCP for Claude Code
+
+Connect CoinMarketCap MCP to Claude Code for real-time crypto market data and agent-assisted development in the terminal.
+
+URL: https://pro.coinmarketcap.com/api/documentation/ai-agent-hub/claude-code
+
+# CoinMarketCap MCP for Claude Code
+
+Use the CoinMarketCap MCP server with Claude Code to access live crypto prices, market data, technical analysis, and more — directly from your terminal.
+
+## Prerequisites
+
+- Active Claude subscription (Pro, Max, or API access)
+- Claude Code installed (`npm install -g @anthropic-ai/claude-code`)
+
+## Setup
+
+1. **Get your API key**
+
+   Sign up or log in at [pro.coinmarketcap.com](https://pro.coinmarketcap.com/login) to get your API key.
+
+1. **Add the CoinMarketCap MCP server**
+
+   Run the following command to register the MCP server:
+
+   ```bash
+   claude mcp add cmc-mcp \
+     --transport http \
+     --url https://mcp.coinmarketcap.com/mcp \
+     --header "X-CMC-MCP-API-KEY: your-api-key"
+   ```
+
+   Replace `your-api-key` with your actual CoinMarketCap API key.
+
+1. **Verify the connection**
+
+   Start Claude Code and ask: **"What tools do you have available?"**
+
+   ```bash
+   claude
+   ```
+
+   You should see CoinMarketCap tools listed in the available tools.
+
+## Install Skills (optional)
+
+Install CoinMarketCap skills for structured market analysis and token research workflows:
+
+```bash
+npx skills add https://github.com/coinmarketcap-official/skills-for-ai-agents-by-CoinMarketCap
+```
+
+This adds skills for [market reports](https://pro.coinmarketcap.com/api/documentation/ai-agent-hub/skills/market-report), [crypto research](https://pro.coinmarketcap.com/api/documentation/ai-agent-hub/skills/crypto-research), and [API integration](https://pro.coinmarketcap.com/api/documentation/ai-agent-hub/skills/cmc-api-crypto).
+
+## What you can do
+
+Once connected, ask Claude Code things like:
+
+- "What's the current price of Ethereum?"
+- "Give me a full market report"
+- "Research LINK — is it worth holding?"
+- "What's the Fear & Greed index right now?"
+- "Show me trending crypto narratives"
+- "Help me build a portfolio tracker using the CMC API"
+
+---
+
+## Document: CoinMarketCap AI Agent Skills
+
+Compare CoinMarketCap agent skills for CLI workflows, MCP, x402, and direct API integration.
+
+URL: https://pro.coinmarketcap.com/api/documentation/ai-agent-hub/skills/overview
+
+# CoinMarketCap AI Agent Skills
+
+GitHub repo: [coinmarketcap-official/skills-for-ai-agents-by-CoinMarketCap](https://github.com/coinmarketcap-official/skills-for-ai-agents-by-CoinMarketCap)
+
+Use this page when you want reusable workflows on top of CoinMarketCap data access. Skills are most useful when you want your agent to follow a repeatable pattern instead of improvising every request from scratch.
+
+If you want a terminal-native runtime instead of a reusable skill, use [CMC CLI](https://pro.coinmarketcap.com/api/documentation/ai-agent-hub/cmc-cli).
+
+## Choose a skill type
+
+| If you want to... | Start here | Best for |
+|---|---|---|
+| Use CoinMarketCap through terminal-native command workflows | CLI Skills | Shell-first agents, market reports, and single-coin research |
+| Use live CoinMarketCap data through MCP with structured workflows | MCP Skills | Market reports, token research, and other repeatable MCP-based tasks |
+| Pay per request with x402 and keep the workflow reusable | x402 Skills | On-chain payment flows without an API key |
+| Build direct REST integrations with implementation guidance | API Integration Skills | Custom apps, agents, and backends that call the API directly |
+
+- [CLI Skills](/ai-agent-hub/skills/cmc-cli): Terminal-native skill workflows for market reports, coin research, and command selection.
+- [MCP Skills](/ai-agent-hub/skills/cmc-mcp): Real-time crypto data via Model Context Protocol. Includes market reports and token research.
+- [x402 Skills](/ai-agent-hub/skills/cmc-x402): Pay-per-request data access via USDC on Base. No API key required.
+- [API Integration Skills](/ai-agent-hub/skills/cmc-api-crypto): Direct REST API integration for cryptocurrency, DEX, exchange, and market data.
+
+## When skills help
+
+- You want a repeatable workflow such as a market report or token research process
+- You want to give an AI agent a stronger default pattern for working with CMC data
+- You want integration guidance that is narrower than the full API reference
+
+## Need a runtime instead?
+
+CMC CLI is still a runtime, not just a skill family. Use the runtime page for install, authentication, and command-level setup, then use the CLI skills below when you want reusable prompt guidance on top of that runtime.
+
+- [CMC CLI](/ai-agent-hub/cmc-cli): Use a shell-native CoinMarketCap runtime for installation, scripting, JSON output, CSV export, and agent-friendly command workflows.
+
+## CLI Skills
+
+| Skill | Description |
+|-------|-------------|
+| [CMC CLI](https://pro.coinmarketcap.com/api/documentation/ai-agent-hub/skills/cmc-cli) | Core command-selection guidance for terminal-native CoinMarketCap workflows, including output rules, workflow ordering, and common mistakes. |
+| [Market Skill](https://pro.coinmarketcap.com/api/documentation/ai-agent-hub/skills/market-skill) | Market-report workflow for snapshots, movers, BTC/ETH anchors, and news flow using shipped `cmc` commands only. |
+| [Coin Research](https://pro.coinmarketcap.com/api/documentation/ai-agent-hub/skills/coin-research) | Single-asset research workflow that combines identity resolution, quotes, history, pairs, market context, and sentiment. |
+
+## MCP Skills (Real-time Data)
+
+| Skill | Description |
+|-------|-------------|
+| [CMC MCP](https://pro.coinmarketcap.com/api/documentation/ai-agent-hub/skills/cmc-mcp) | Fetches cryptocurrency market data using the CoinMarketCap MCP. Provides prices, technical analysis, news, holder metrics, trending narratives, and global market data. |
+| [Market Report](https://pro.coinmarketcap.com/api/documentation/ai-agent-hub/skills/market-report) | Generates comprehensive daily/weekly market reports combining global metrics, fear/greed, trending narratives, derivatives data, and upcoming catalysts. |
+| [Crypto Research](https://pro.coinmarketcap.com/api/documentation/ai-agent-hub/skills/crypto-research) | Performs due diligence on any token with structured analysis of fundamentals, tokenomics, holder distribution, technicals, and risk factors. |
+
+## x402 Skills (Pay-per-Request)
+
+| Skill | Description |
+|-------|-------------|
+| [CMC x402](https://pro.coinmarketcap.com/api/documentation/ai-agent-hub/skills/cmc-x402) | Access CMC data via x402 pay-per-request protocol. Pay $0.01 USDC per request on Base. No API key required. |
+
+## API Integration Skills
+
+| Skill | Description | Endpoints |
+|-------|-------------|-----------|
+| [Cryptocurrency API](https://pro.coinmarketcap.com/api/documentation/ai-agent-hub/skills/cmc-api-crypto) | Cryptocurrency data APIs for listings, quotes, OHLCV, categories, trending, and market pairs. | 16 endpoints |
+| [DEX API](https://pro.coinmarketcap.com/api/documentation/ai-agent-hub/skills/cmc-api-dex) | DEX APIs for on-chain token data, prices, pools, transactions, and security analysis. | 18 endpoints |
+| [Exchange API](https://pro.coinmarketcap.com/api/documentation/ai-agent-hub/skills/cmc-api-exchange) | Centralized exchange APIs for exchange info, listings, volume, market pairs, and assets. | 7 endpoints |
+| [Market API](https://pro.coinmarketcap.com/api/documentation/ai-agent-hub/skills/cmc-api-market) | Market-wide APIs for global metrics, fear/greed, CMC indices, community trends, content, and charts. | 19 endpoints |
+
+## How to choose quickly
+
+- Choose **CLI Skills** if you want reusable prompt guidance on top of the CoinMarketCap CLI
+- Choose **CMC CLI** if you want command-selection guidance and workflow ordering
+- Choose **Market Skill** if you want a market snapshot or crypto morning brief
+- Choose **Coin Research** if you want a quick single-asset research pass
+- Choose **MCP Skills** if you are already connecting through the CoinMarketCap MCP server
+- Choose **x402 Skills** if you want pay-per-request usage and no API key
+- Choose **API Integration Skills** if you are building your own application logic with the REST API
+
+## Installation
+
+### CLI Skills
+
+Start with the [CoinMarketCap CLI runtime page](https://pro.coinmarketcap.com/api/documentation/ai-agent-hub/cmc-cli), then use the CLI skills for structured prompt guidance:
+
+```bash
+brew install coinmarketcap-official/CoinMarketCap-CLI/cmc
+cmc auth
+cmc status -o json
+```
+
+The CLI skills map to these three public docs pages:
+
+- `CMC CLI` for command selection and output rules
+- `Market Skill` for market snapshots and report generation
+- `Coin Research` for single-asset analysis
+
+### MCP Skills
+
+```json
+{
+  "mcpServers": {
+    "cmc-mcp": {
+      "url": "https://mcp.coinmarketcap.com/mcp",
+      "headers": {
+        "X-CMC-MCP-API-KEY": "your-api-key"
+      }
+    }
+  }
+}
+```
+
+Get your API key from [https://pro.coinmarketcap.com/login](https://pro.coinmarketcap.com/login)
+
+### x402 Skills
+
+```bash
+npm install @x402/axios @x402/evm viem
+```
+
+Fund a wallet with USDC on Base (Chain ID: 8453).
+
+### API Skills
+
+All API requests use the base URL `https://pro-api.coinmarketcap.com` with the `X-CMC_PRO_API_KEY` header.
+
+Get your API key from [https://pro.coinmarketcap.com/login](https://pro.coinmarketcap.com/login)
+
+## Source
+
+These skills are open source and available on GitHub:
+[coinmarketcap-official/skills-for-ai-agents-by-CoinMarketCap](https://github.com/coinmarketcap-official/skills-for-ai-agents-by-CoinMarketCap)
+
+---
+
+## Document: Market Skill
+
+Generates market reports and snapshot briefs using shipped CoinMarketCap CLI commands.
+
+URL: https://pro.coinmarketcap.com/api/documentation/ai-agent-hub/skills/market-skill
+
+# Market Skill
+
+GitHub repo: [coinmarketcap-official/CoinMarketCap-CLI](https://github.com/coinmarketcap-official/CoinMarketCap-CLI)
+
+Use this skill for command-driven crypto market report requests such as market report, market snapshot, crypto morning brief, how's crypto today, or today's crypto market summary.
+
+## Prerequisites
+
+- CoinMarketCap CLI installed and authenticated
+- Familiarity with the core [CMC CLI skill](https://pro.coinmarketcap.com/api/documentation/ai-agent-hub/skills/cmc-cli)
+
+If the runtime is not ready yet, start with the [CoinMarketCap CLI runtime page](https://pro.coinmarketcap.com/api/documentation/ai-agent-hub/cmc-cli).
+
+## Trigger
+
+Apply when the request matches or clearly implies:
+- market report
+- market snapshot
+- crypto morning brief
+- how's crypto today
+- today's crypto market summary
+
+## Scope
+
+- Use only shipped `cmc` commands for this report.
+- Default commands:
+  - `metrics`
+  - `price --id 1,1027`
+  - `trending`
+  - `top-gainers-losers --time-period 24h`
+  - `news --limit 5`
+- Use `pairs <id> --category derivatives` only when the user explicitly asks for derivatives or an asset-specific derivatives extension.
+- Do not switch to MCP or raw Pro API inside this skill.
+- Treat `resolve` and `history` as higher-caution, non-default dependencies for this report. Use them only if the request truly needs identity disambiguation or historical context.
+
+## Report Format
+
+Always output these sections in this order:
+
+1. Market Snapshot
+2. BTC & ETH
+3. Momentum
+4. News Flow
+5. Risks / Caveats
+
+## Section Rules
+
+- Market Snapshot: summarize the broad tape from `metrics`, `trending`, and `top-gainers-losers`.
+- BTC & ETH: anchor on `price --id 1,1027`; keep it tight and comparative.
+- Momentum: focus on the strongest movers and what the 24h setup suggests.
+- News Flow: use only the top 5 news items and keep it signal-first.
+- Risks / Caveats: call out data gaps, stale prints, noisy headlines, and any derivatives caveat if `pairs` was used.
+
+## Failure Handling
+
+- If a command fails, return the affected section with a short partial note instead of dropping the whole report.
+- If a command returns incomplete data, say what is missing, use the available subset, and continue to the next section.
+- If BTC/ETH data is unavailable, state that explicitly and still complete the remaining sections.
+
+## Style
+
+- Be concise and instruction-focused.
+- Prefer report-ready output over explanation.
+- Keep the tone suitable for agent task execution, not general assistant chatter.
+
+---
+
+## Document: Market Report
+
+Generates comprehensive crypto market reports using CoinMarketCap MCP data including global metrics, fear/greed, trending narratives, and derivatives.
+
+URL: https://pro.coinmarketcap.com/api/documentation/ai-agent-hub/skills/market-report
+
+# Market Report
+
+GitHub repo: [coinmarketcap-official/skills-for-ai-agents-by-CoinMarketCap](https://github.com/coinmarketcap-official/skills-for-ai-agents-by-CoinMarketCap)
+
+Generate a comprehensive crypto market report by systematically pulling data from multiple CMC MCP tools.
+
+## Prerequisites
+
+Before generating a report, verify the CMC MCP tools are available. If tools fail or return connection errors, set up the MCP connection:
+
+```json
+{
+  "mcpServers": {
+    "cmc-mcp": {
+      "url": "https://mcp.coinmarketcap.com/mcp",
+      "headers": {
+        "X-CMC-MCP-API-KEY": "your-api-key"
+      }
+    }
+  }
+}
+```
+
+Get your API key from [https://pro.coinmarketcap.com/login](https://pro.coinmarketcap.com/login)
+
+## Report Workflow
+
+### Step 1: Global Market Health
+
+Call `get_global_metrics_latest` to get:
+- Total crypto market cap and 24h/7d/30d changes
+- Fear & Greed Index (current value and trend)
+- Altcoin Season Index
+- BTC and ETH dominance
+- Total volume
+- ETF flows (BTC and ETH)
+
+### Step 2: Market Technical Analysis
+
+Call `get_crypto_marketcap_technical_analysis` to get:
+- Total market cap RSI
+- MACD signals
+- Key support/resistance levels (Fibonacci, pivot points)
+
+### Step 3: Leverage and Derivatives
+
+Call `get_global_crypto_derivatives_metrics` to get:
+- Total open interest and changes
+- Funding rates (positive = longs paying shorts)
+- BTC liquidations (long vs short bias)
+- Futures vs perpetuals breakdown
+
+### Step 4: Trending Narratives
+
+Call `trending_crypto_narratives` to get:
+- Top trending themes/sectors
+- Market cap and performance of each narrative
+- Top coins within each narrative
+
+### Step 5: Upcoming Catalysts
+
+Call `get_upcoming_macro_events` to get:
+- Fed meetings and rate decisions
+- Regulatory deadlines
+- Major protocol upgrades
+
+### Step 6: BTC and ETH Quick Check
+
+Call `get_crypto_quotes_latest` with id="1,1027" to get current BTC and ETH prices and changes as anchors for the report.
+
+## Report Structure
+
+```markdown
+## Market Snapshot
+- Total market cap: $X.XX T (24h: +X.X%)
+- Fear & Greed: XX (Extreme Fear/Fear/Neutral/Greed/Extreme Greed)
+- BTC Dominance: XX% | ETH Dominance: XX%
+- Altcoin Season Index: XX
+
+## BTC & ETH
+- BTC: $XX,XXX (24h: X.X%, 7d: X.X%)
+- ETH: $X,XXX (24h: X.X%, 7d: X.X%)
+
+## Market Technicals
+- RSI: XX (oversold/neutral/overbought)
+- MACD: bullish/bearish
+- Key levels: support at $X.XX T, resistance at $X.XX T
+
+## Leverage & Sentiment
+- Open Interest: $XXX B (24h: X.X%)
+- Funding Rate: X.XXX% (longs/shorts paying)
+- 24h Liquidations: $XXX M (XX% longs, XX% shorts)
+
+## Trending Narratives
+1. Narrative Name - $XX B market cap, +XX% (7d)
+2. ...
+
+## Upcoming Catalysts
+- Date: Event description
+- ...
+```
+
+## Adapting the Report
+
+- **Quick summary**: Focus on Market Snapshot and BTC/ETH sections only
+- **Full report**: Include all sections
+- **Specific focus**: Expand the requested section with more detail
+
+## Required Tools
+
+| Tool | Report Section |
+|------|---------------|
+| `get_global_metrics_latest` | Market Snapshot |
+| `get_crypto_marketcap_technical_analysis` | Market Technicals |
+| `get_global_crypto_derivatives_metrics` | Leverage & Sentiment |
+| `trending_crypto_narratives` | Trending Narratives |
+| `get_upcoming_macro_events` | Upcoming Catalysts |
+| `get_crypto_quotes_latest` | BTC & ETH |
+
+---
+
+## Document: Crypto Research
+
+Performs comprehensive due diligence on any cryptocurrency using CoinMarketCap MCP data including fundamentals, tokenomics, holder analysis, and technicals.
+
+URL: https://pro.coinmarketcap.com/api/documentation/ai-agent-hub/skills/crypto-research
+
+# Crypto Research
+
+GitHub repo: [coinmarketcap-official/skills-for-ai-agents-by-CoinMarketCap](https://github.com/coinmarketcap-official/skills-for-ai-agents-by-CoinMarketCap)
+
+Perform comprehensive due diligence on any cryptocurrency by systematically gathering and analyzing data from multiple CMC MCP tools.
+
+## Prerequisites
+
+Before starting research, verify the CMC MCP tools are available. If tools fail or return connection errors, set up the MCP connection:
+
+```json
+{
+  "mcpServers": {
+    "cmc-mcp": {
+      "url": "https://mcp.coinmarketcap.com/mcp",
+      "headers": {
+        "X-CMC-MCP-API-KEY": "your-api-key"
+      }
+    }
+  }
+}
+```
+
+Get your API key from [https://pro.coinmarketcap.com/login](https://pro.coinmarketcap.com/login)
+
+## Research Workflow
+
+### Step 1: Identify the Token
+
+Call `search_cryptos` with the token name/symbol to get the CMC ID.
+
+### Step 2: Basic Information
+
+Call `get_crypto_info` to get:
+- Project description and category
+- Launch date
+- Website, social links, documentation
+- Tags (DeFi, Layer 1, Meme coin, etc.)
+
+### Step 3: Market Data
+
+Call `get_crypto_quotes_latest` to get:
+- Current price and market cap
+- 24h, 7d, 30d, 90d, 1y price changes
+- Trading volume and volume change
+- Circulating supply vs max supply
+- Market cap rank
+
+### Step 4: Holder Analysis
+
+Call `get_crypto_metrics` to get:
+- Address distribution by holding value ($0-1k, $1k-100k, $100k+)
+- Whale concentration (% held by top holders)
+- Holder behavior (traders vs cruisers vs long-term holders)
+
+### Step 5: Technical Analysis
+
+Call `get_crypto_technical_analysis` to get:
+- Moving averages (7d, 30d, 200d SMA/EMA)
+- RSI (oversold < 30, overbought > 70)
+- MACD signal
+- Fibonacci levels and pivot points
+
+### Step 6: Recent News
+
+Call `get_crypto_latest_news` with limit 5-10 to get recent headlines and sentiment.
+
+### Step 7: Deep Dive (if needed)
+
+Call `search_crypto_info` to answer specific questions about the token's technology, use case, or mechanics.
+
+## Analysis Framework
+
+### Fundamentals
+- What problem does it solve?
+- Is there a working product?
+- How does it compare to competitors?
+- Is the use case sustainable?
+
+### Tokenomics
+- What % of max supply is circulating?
+- Is there inflation or deflation?
+- Are there large unlocks coming?
+- How concentrated is ownership?
+
+### Market Position
+- Market cap rank and trajectory
+- Volume relative to market cap (healthy turnover?)
+- Price trend (accumulation or distribution?)
+
+### Risk Assessment
+
+**Red Flags:**
+- Extreme whale concentration (>10% held by few addresses)
+- Low holder count relative to market cap
+- Declining holder numbers
+- Negative news sentiment
+- Price down >80% from ATH with no recovery
+- Very low trading volume
+
+**Green Flags:**
+- Growing holder base
+- High % of long-term holders
+- Healthy distribution across address sizes
+- Active development and news flow
+- Strong community engagement
+
+## Report Structure
+
+```markdown
+## [Token Name] Research Report
+
+### Overview
+- Category: [DeFi/Layer 1/Meme/etc.]
+- Launched: [Date]
+- Rank: #XX by market cap
+
+### Market Data
+- Price: $X.XX
+- Market Cap: $X.XX B
+- 24h Volume: $X.XX M
+- Performance: 24h X.X% | 7d X.X% | 30d X.X% | 1y X.X%
+
+### Supply
+- Circulating: X.XX M (XX% of max)
+- Max Supply: X.XX M
+
+### Holder Analysis
+- Total Addresses: X.XX M
+- Whale Concentration: X.X%
+- Long-term Holders: XX%
+- Holder Trend: Growing/Stable/Declining
+
+### Technical Outlook
+- RSI: XX (oversold/neutral/overbought)
+- Trend: Above/Below 200d MA
+- Key Support: $X.XX
+- Key Resistance: $X.XX
+
+### Recent News
+- [Headline 1]
+- [Headline 2]
+
+### Green Flags
+- [List positive indicators]
+
+### Red Flags
+- [List concerns]
+
+### Summary
+[2-3 sentence synthesis of the research findings]
+```
+
+## Required Tools
+
+| Tool | Report Section |
+|------|---------------|
+| `search_cryptos` | Token identification |
+| `get_crypto_info` | Overview |
+| `get_crypto_quotes_latest` | Market Data, Supply |
+| `get_crypto_metrics` | Holder Analysis |
+| `get_crypto_technical_analysis` | Technical Outlook |
+| `get_crypto_latest_news` | Recent News |
+| `search_crypto_info` | Deep Dive |
+
+:::note
+This is research data, not financial advice. Always present both positive and negative findings.
+:::
+
+---
+
+## Document: Coin Research
+
+Runs a quick single-asset research workflow using the CoinMarketCap CLI.
+
+URL: https://pro.coinmarketcap.com/api/documentation/ai-agent-hub/skills/coin-research
+
+# Coin Research
+
+GitHub repo: [coinmarketcap-official/CoinMarketCap-CLI](https://github.com/coinmarketcap-official/CoinMarketCap-CLI)
+
+Quick, structured single-coin research using the `cmc` CLI. Covers the main research dimensions in one pass without a multi-model debate.
+
+## When to Use
+
+- User says "research BTC", "look at SOL", "tell me about ETH", or "coin overview"
+- User wants a quick asset profile before deciding whether to run a deeper analysis workflow
+- User asks "what's happening with X" for a specific crypto asset
+
+## When Not to Use
+
+- Full investment analysis with bull/bear debate
+- Market-wide scan with no specific coin
+- Stock analysis
+
+## Research Pipeline
+
+```text
+Step 1: Identity Resolution
+    ↓
+Step 2: Price + Fundamentals + Chain Stats
+    ↓
+Step 3: Historical Price Action
+    ↓
+Step 4: Market Structure
+    ↓
+Step 5: Market Context
+    ↓
+Step 6: News & Sentiment
+    ↓
+Synthesis: Structured Research Report
+```
+
+## Execution
+
+### Step 1: Identity Resolution
+
+```bash
+# If user gives a symbol/name, resolve to CMC ID first
+cmc resolve --symbol BTC -o json
+
+# If ambiguous, search
+cmc search bitcoin -o json
+```
+
+Extract `cmc_id`, `slug`, `name`, `symbol`, and `rank`.
+
+### Step 2: Price + Fundamentals + Chain Stats
+
+```bash
+# Single enriched call — gets quotes + info + blockchain stats
+cmc price --id <cmc_id> --with-info --with-chain-stats -o json
+```
+
+Extract from quotes: price, market_cap, volume_24h, percent_change_24h/7d/30d.
+Extract from info: description, tags, and URLs such as website, explorer, github, and twitter.
+Extract from chain_stats: consensus_mechanism, hashrate, tps_24h, total_transactions.
+
+### Step 3: Historical Price Action
+
+```bash
+# 7-day hourly candles
+cmc history --id <cmc_id> --days 7 --ohlc --interval hourly -o json
+
+# 30-day daily candles
+cmc history --id <cmc_id> --days 30 --ohlc -o json
+```
+
+Analyze trend direction, volatility, support/resistance levels, and volume patterns.
+
+### Step 4: Market Structure
+
+```bash
+# Top trading pairs across spot + derivatives
+cmc pairs <slug> --category all --limit 20 -o json
+```
+
+Analyze liquidity distribution, exchange concentration, and spot vs derivatives ratio.
+
+### Step 5: Market Context
+
+```bash
+# Global metrics
+cmc metrics -o json
+
+# Top movers
+cmc top-gainers-losers --time-period 24h --limit 20 -o json
+```
+
+Analyze asset performance vs market, BTC dominance trend, and sector rotation signals.
+
+### Step 6: News & Sentiment
+
+```bash
+# Latest news
+cmc news --limit 10 -o json
+
+# Community trending
+cmc trending --limit 10 -o json
+```
+
+Analyze catalyst events, narrative alignment, and social momentum.
+
+## Output Format
+
+Present findings as a structured report:
+
+```markdown
+# <Name> (<Symbol>) Research Report
+
+## Overview
+- **Rank**: #X | **Price**: $X | **Market Cap**: $X
+- **24h Change**: X% | **7d**: X% | **30d**: X%
+- **Volume 24h**: $X | **Vol/MCap Ratio**: X%
+
+## Fundamentals
+- **Description**: (1-2 sentences from info)
+- **Tags/Sectors**: [list]
+- **Chain Stats**: consensus, hashrate/TPS, transaction activity
+- **Key Links**: website, explorer, github, twitter
+
+## Price Action (7d / 30d)
+- **Short-term trend**: (up/down/sideways + key levels)
+- **Medium-term trend**: (up/down/sideways + key levels)
+- **Volatility**: (high/medium/low relative to recent history)
+
+## Market Structure
+- **Top exchanges**: (by volume)
+- **Liquidity**: (spot vs derivatives split)
+- **Pair concentration**: (how distributed)
+
+## Market Context
+- **BTC Dominance**: X% (trend)
+- **Total Market Cap**: $X (trend)
+- **Asset vs Market**: outperforming / underperforming / in-line
+- **Sector momentum**: (relevant sector trends)
+
+## News & Sentiment
+- **Key headlines**: (top 3 relevant)
+- **Social trending**: (is asset trending? community signals)
+- **Catalyst watch**: (upcoming events if any)
+
+## Quick Assessment
+- **Strengths**: (2-3 bullet points)
+- **Risks**: (2-3 bullet points)
+- **Next step**: "Run a deeper analysis workflow for a full investment view"
+```
+
+## Data Gaps
+
+The following dimensions are not available via cmc-cli as a single first-class call:
+- Technical indicators such as RSI, MACD, and Bollinger bands
+- Fear & Greed Index
+- Trending narratives
+- Community topics
+- Price performance stats beyond the fetched history window
+- Category or sector classification
+
+## Tips
+
+- Always use `--id` over `--symbol` after resolution for determinism
+- Use `-o json` for all data fetching, `-o table` only for final human display
+- Run Steps 2-6 in parallel where possible after Step 1
+- If an enrichment flag fails, fall back gracefully and keep the report moving
+- Keep the synthesis concise
+
+---
+
+## Document: CMC x402
+
+Access CoinMarketCap data via x402 pay-per-request protocol with USDC payments on Base. No API key required.
+
+URL: https://pro.coinmarketcap.com/api/documentation/ai-agent-hub/skills/cmc-x402
+
+# CMC x402
+
+GitHub repo: [coinmarketcap-official/skills-for-ai-agents-by-CoinMarketCap](https://github.com/coinmarketcap-official/skills-for-ai-agents-by-CoinMarketCap)
+
+Pay-per-request crypto market data powered by the x402 protocol. Access CoinMarketCap endpoints instantly with on-chain USDC payment. No API key or subscription required.
+
+## What is x402?
+
+x402 is an open payment protocol developed by Coinbase that enables automatic stablecoin payments over HTTP. Instead of managing API keys, you pay **$0.01 USDC** per request on Base. The x402 client library handles payment signing automatically.
+
+Learn more: [https://docs.x402.org](https://docs.x402.org)
+
+## Prerequisites
+
+- **Node.js 18+** and npm installed
+- **Base network wallet** with a private key you control
+- **USDC on Base** to pay for requests ($0.01 per request)
+- **Small amount of ETH on Base** for gas fees
+
+## Quick Start
+
+Install the x402 TypeScript SDK:
+
+```bash
+npm install @x402/axios @x402/evm viem
+```
+
+Fetch data with automatic payment:
+
+```typescript
+import { createX402AxiosClient } from "@x402/axios";
+import { ExactEvmScheme, toClientEvmSigner } from "@x402/evm";
+import { privateKeyToAccount } from "viem/accounts";
+import { createPublicClient, http } from "viem";
+import { base } from "viem/chains";
+
+// SECURITY: Never hardcode private keys in source code.
+// Use environment variables: process.env.PRIVATE_KEY
+const account = privateKeyToAccount(process.env.PRIVATE_KEY as `0x${string}`);
+const publicClient = createPublicClient({ chain: base, transport: http() });
+const signer = toClientEvmSigner(account, publicClient);
+
+const client = createX402AxiosClient({
+  schemes: [new ExactEvmScheme(signer)],
+});
+
+const response = await client.get(
+  "https://pro-api.coinmarketcap.com/x402/v3/cryptocurrency/quotes/latest",
+  { params: { symbol: "BTC,ETH" } }
+);
+
+console.log(response.data);
+```
+
+## Endpoints
+
+Base URL: `https://pro-api.coinmarketcap.com`
+
+| Endpoint | Path | Use For |
+|----------|------|---------|
+| Quotes | `/x402/v3/cryptocurrency/quotes/latest` | Current prices for specific coins |
+| Listings | `/x402/v3/cryptocurrency/listings/latest` | Top coins by market cap |
+| DEX Search | `/x402/v1/dex/search` | Find DEX tokens by keyword |
+| DEX Pairs | `/x402/v4/dex/pairs/quotes/latest` | DEX pair trading data |
+
+All parameters from the standard CMC Pro API work with x402 endpoints.
+
+## Use Cases
+
+- **Get current prices for specific coins:** Use `/x402/v3/cryptocurrency/quotes/latest` with symbol or id parameter
+- **List top cryptocurrencies:** Use `/x402/v3/cryptocurrency/listings/latest` with limit parameter
+- **Search for DEX tokens:** Use `/x402/v1/dex/search` with keyword parameter
+- **Get DEX pair trading data:** Use `/x402/v4/dex/pairs/quotes/latest` with pair address
+- **AI agent data access:** Use the MCP endpoint at `https://mcp.coinmarketcap.com/x402/mcp`
+
+## MCP for AI Agents
+
+The x402 MCP endpoint lets AI agents access CMC data with automatic payment.
+
+**Connection URL:**
+```
+https://mcp.coinmarketcap.com/x402/mcp
+```
+
+**Transport:** Streamable HTTP (POST)
+
+Connect using any MCP client with an x402-aware HTTP transport. The server exposes the same tools as the REST endpoints and supports automatic tool discovery.
+
+## Pricing
+
+**$0.01 USDC** per request on Base (Chain ID: 8453).
+
+Payment only occurs on successful data delivery. If the request fails, no payment is deducted.
+
+## Resources
+
+- [x402 Protocol](https://x402.org)
+- [x402 Documentation](https://docs.x402.org)
+- [x402 GitHub](https://github.com/coinbase/x402)
+- [CMC API Documentation](https://coinmarketcap.com/api/documentation)
+
+---
+
+## Document: CMC MCP
+
+Fetches cryptocurrency market data, prices, technical analysis, news, and trends using the CoinMarketCap MCP.
+
+URL: https://pro.coinmarketcap.com/api/documentation/ai-agent-hub/skills/cmc-mcp
+
+# CMC MCP
+
+GitHub repo: [coinmarketcap-official/skills-for-ai-agents-by-CoinMarketCap](https://github.com/coinmarketcap-official/skills-for-ai-agents-by-CoinMarketCap)
+
+You have access to CoinMarketCap data through MCP tools. Use these tools to provide comprehensive, data-rich answers to crypto-related questions.
+
+## Prerequisites
+
+Before using CMC tools, verify the MCP connection is working. If tools fail or return connection errors, ask the user to set up the MCP connection:
+
+```json
+{
+  "mcpServers": {
+    "cmc-mcp": {
+      "url": "https://mcp.coinmarketcap.com/mcp",
+      "headers": {
+        "X-CMC-MCP-API-KEY": "your-api-key"
+      }
+    }
+  }
+}
+```
+
+Get your API key from [https://pro.coinmarketcap.com/login](https://pro.coinmarketcap.com/login)
+
+## Core Principle
+
+Err on the side of fetching more data. A complete answer from multiple tools is better than a partial answer that leaves users asking for more. When in doubt, call additional tools to gather comprehensive data.
+
+## Workflow
+
+### 1. Always Search First
+
+When a user mentions a cryptocurrency by name or symbol, search for it first to get the ID:
+
+```
+User: "How is Solana doing?"
+→ Call search_cryptos with query "solana"
+→ Get ID (e.g., 5426)
+→ Then call other tools using that ID
+```
+
+Most tools require the numeric CMC ID, not the name or symbol. The search tool returns: id, name, symbol, slug, and rank.
+
+### 2. Batch Requests When Useful
+
+When dealing with multiple coins, batch the requests:
+
+```
+User: "Compare BTC, ETH, and SOL"
+→ Search for each to get IDs: 1, 1027, 5426
+→ Call get_crypto_quotes_latest with id="1,1027,5426"
+```
+
+This is more efficient than separate calls and allows for direct comparison in the response.
+
+### 3. Match Tools to Query Type
+
+**For price and market data:**
+- `get_crypto_quotes_latest` returns price, market cap, volume, percent changes (1h, 24h, 7d, 30d, 90d, 1y), circulating supply, and dominance
+
+**For coin background and links:**
+- `get_crypto_info` returns description, website, social links, explorer URLs, tags, and launch date
+
+**For technical analysis:**
+- `get_crypto_technical_analysis` returns moving averages (SMA, EMA), MACD, RSI, Fibonacci levels, and pivot points
+
+**For recent news:**
+- `get_crypto_latest_news` returns headlines, descriptions, content, URLs, and publish dates
+
+**For holder and distribution data:**
+- `get_crypto_metrics` returns address counts by holding value, whale vs others distribution, and holder time breakdowns (traders, cruisers, holders)
+
+**For concept explanations:**
+- `search_crypto_info` performs semantic search on crypto concepts, whitepapers, and FAQs
+
+**For overall market health:**
+- `get_global_metrics_latest` returns total market cap, fear/greed index, altcoin season index, BTC/ETH dominance, volume, and ETF flows
+
+**For derivatives and leverage data:**
+- `get_global_crypto_derivatives_metrics` returns open interest, funding rates, liquidations, and futures vs perpetuals breakdown
+
+**For total market cap technical analysis:**
+- `get_crypto_marketcap_technical_analysis` returns TA indicators for the entire crypto market cap
+
+**For trending themes:**
+- `trending_crypto_narratives` returns hot narratives with market cap, volume, performance, and top coins in each narrative
+
+**For upcoming catalysts:**
+- `get_upcoming_macro_events` returns scheduled events like Fed meetings, regulatory deadlines, and major announcements
+
+## Available Tools
+
+| Tool | Description |
+|------|-------------|
+| `search_cryptos` | Search for cryptocurrencies by name or symbol |
+| `get_crypto_quotes_latest` | Get latest price quotes for one or more cryptocurrencies |
+| `get_crypto_info` | Get static metadata (description, links, tags) |
+| `get_crypto_metrics` | Get holder distribution and address metrics |
+| `get_crypto_technical_analysis` | Get technical indicators (RSI, MACD, MAs) |
+| `get_crypto_latest_news` | Get recent news for a cryptocurrency |
+| `search_crypto_info` | Semantic search on crypto knowledge base |
+| `get_global_metrics_latest` | Get total market cap, dominance, fear/greed |
+| `get_global_crypto_derivatives_metrics` | Get derivatives open interest and funding |
+| `get_crypto_marketcap_technical_analysis` | Get TA for total market cap |
+| `trending_crypto_narratives` | Get trending market narratives |
+| `get_upcoming_macro_events` | Get upcoming market-moving events |
+
+## Error Handling
+
+- **No search results**: Report that the coin was not found, ask user to clarify
+- **Tool failure/timeout**: Retry once, then note which data is unavailable and proceed
+- **Rate limited (429)**: Inform the user, suggest waiting before retrying
+
+---
+
+## Document: CMC CLI
+
+Uses the CoinMarketCap CLI for terminal-native market data, scripting, and agent workflows.
+
+URL: https://pro.coinmarketcap.com/api/documentation/ai-agent-hub/skills/cmc-cli
+
+# CMC CLI
+
+GitHub repo: [coinmarketcap-official/CoinMarketCap-CLI](https://github.com/coinmarketcap-official/CoinMarketCap-CLI)
+
+Use this skill when your agent should work through the CoinMarketCap CLI instead of direct REST calls or MCP tools.
+
+## Prerequisites
+
+Before using this skill, set up the CLI runtime:
+
+```bash
+brew install coinmarketcap-official/CoinMarketCap-CLI/cmc
+cmc auth
+cmc status -o json
+```
+
+If you have not installed the CLI yet, start with the [CoinMarketCap CLI runtime page](https://pro.coinmarketcap.com/api/documentation/ai-agent-hub/cmc-cli).
+
+## Quick Reference
+
+| Need | Use | Notes |
+|---|---|---|
+| Exact asset lookup | `resolve` | Prefer `--id`, `--slug`, or `--symbol` for deterministic identity. |
+| Quote and enrichments | `price` | Add `--with-info` and `--with-chain-stats` when you need more context. |
+| Search and discovery | `search` | Use for name, symbol, or chain-scoped address discovery. |
+| Market scan | `markets`, `trending`, `top-gainers-losers` | Use `-o table` when a human is reading the terminal output. |
+| Time series | `history` | Use `--interval 5m|hourly|daily` only where supported by plan. |
+| Global context | `metrics`, `news`, `pairs` | Good bundle commands when you need broader market context. |
+| Live monitoring | `monitor` | Polling only, not websocket streaming. |
+| Interactive inspection | `tui` | Human-facing terminal workflow, not for scripting. |
+
+## Workflow
+
+1. Use `resolve` when the user already knows the asset and you need a stable identifier.
+2. Use `search` when the user knows a name, symbol, or contract address but not the exact identity.
+3. Use `price` for quotes, then add enrichments only when they are needed.
+4. Use `markets`, `trending`, `top-gainers-losers`, `metrics`, `news`, or `pairs` for broader market context.
+5. Use `tui` only when a human wants an interactive terminal view.
+
+## Output Rules
+
+- Default output is compact JSON.
+- Use `-o table` for readable terminal output.
+- Use `--dry-run` to inspect request shape without calling the API.
+- Keep identity flags explicit when determinism matters.
+
+## Slash Command Note
+
+This skill does not create a built-in `/cmc` slash command by itself.
+
+- Treat `CMC CLI` as reusable skill guidance on top of the `cmc` runtime.
+- Whether an agent host shows it as a slash command, a skill card, or contextual workflow depends on that host's own registration model.
+- For environments such as Claude Code or OpenClaw, a `/cmc` command would only appear if that host explicitly maps this skill to a slash-command alias or wrapper.
+
+## Common Mistakes
+
+- Do not use `search` as an exact-lookup replacement when `resolve` is available.
+- Do not send scripting workloads to `tui`.
+- Do not split a bundle into smaller commands unless the user asked for the narrow view.
+- Do not assume every numeric or token-like string should map cleanly to a symbol.
+
+## Example Commands
+
+```bash
+cmc resolve --id 1
+cmc price --id 1 --with-info --with-chain-stats -o json
+cmc history --id 1 --days 30 --dry-run -o json
+cmc markets --limit 20 -o table
+```
+
+---
+
+## Document: Market API
+
+API reference for CoinMarketCap market-wide endpoints including global metrics, fear/greed, indices, trending topics, and charts.
+
+URL: https://pro.coinmarketcap.com/api/documentation/ai-agent-hub/skills/cmc-api-market
+
+# Market API
+
+GitHub repo: [coinmarketcap-official/skills-for-ai-agents-by-CoinMarketCap](https://github.com/coinmarketcap-official/skills-for-ai-agents-by-CoinMarketCap)
+
+Market-wide cryptocurrency data including global metrics, sentiment indicators, market indices, community activity, news content, charting data, and utility endpoints.
+
+## Authentication
+
+```bash
+curl -X GET "https://pro-api.coinmarketcap.com/v1/global-metrics/quotes/latest" \
+  -H "X-CMC_PRO_API_KEY: your-api-key"
+```
+
+Get your API key at [https://pro.coinmarketcap.com/login](https://pro.coinmarketcap.com/login)
+
+**Base URL:** `https://pro-api.coinmarketcap.com`
+
+## API Overview
+
+### Global Metrics
+
+| Endpoint | Description |
+|----------|-------------|
+| GET /v1/global-metrics/quotes/historical | Historical global market metrics |
+| GET /v1/global-metrics/quotes/latest | Latest total market cap, BTC dominance |
+
+### Fear and Greed Index
+
+| Endpoint | Description |
+|----------|-------------|
+| GET /v3/fear-and-greed/historical | Historical fear/greed values |
+| GET /v3/fear-and-greed/latest | Current market sentiment score |
+
+### Market Indices
+
+| Endpoint | Description |
+|----------|-------------|
+| GET /v3/index/cmc100-historical | CMC100 index history |
+| GET /v3/index/cmc100-latest | CMC100 current value |
+| GET /v3/index/cmc20-historical | CMC20 index history |
+| GET /v3/index/cmc20-latest | CMC20 current value |
+
+### Community
+
+| Endpoint | Description |
+|----------|-------------|
+| GET /v1/community/trending/token | Trending tokens by community activity |
+| GET /v1/community/trending/topic | Trending discussion topics |
+
+### Content
+
+| Endpoint | Description |
+|----------|-------------|
+| GET /v1/content/latest | Latest news and Alexandria articles |
+| GET /v1/content/posts/comments | Comments on a specific post |
+| GET /v1/content/posts/latest | Latest community posts |
+| GET /v1/content/posts/top | Top ranked community posts |
+
+### K-Line Charts
+
+| Endpoint | Description |
+|----------|-------------|
+| GET /v1/k-line/candles | OHLCV candlestick data |
+| GET /v1/k-line/points | Time series price/market cap points |
+
+### Tools
+
+| Endpoint | Description |
+|----------|-------------|
+| GET /v1/fiat/map | Map fiat currencies to CMC IDs |
+| GET /v1/key/info | API key usage and plan details |
+| GET /v2/tools/price-conversion | Convert between currencies |
+
+## Common Workflows
+
+### Get Market Sentiment Overview
+
+1. Fetch fear/greed index: `/v3/fear-and-greed/latest`
+2. Get global metrics: `/v1/global-metrics/quotes/latest`
+3. Combine for sentiment analysis with market cap context
+
+### Track Market Index Performance
+
+1. Get current CMC100 value: `/v3/index/cmc100-latest`
+2. Fetch historical data: `/v3/index/cmc100-historical`
+3. Compare performance over time
+
+### Monitor Community Activity
+
+1. Check trending tokens: `/v1/community/trending/token`
+2. Review trending topics: `/v1/community/trending/topic`
+3. Read latest posts: `/v1/content/posts/top`
+
+### Build Price Charts
+
+1. Fetch OHLCV candles: `/v1/k-line/candles`
+2. Use interval parameter for timeframe (1h, 4h, 1d)
+3. Plot candlestick chart with returned data
+
+## Common Use Cases
+
+1. Get current market sentiment (Fear & Greed)
+2. Get total crypto market cap
+3. Get BTC dominance
+4. Track market cap history
+5. Track Fear & Greed history
+6. Get CMC100 index performance
+7. Compare CMC100 vs CMC20
+8. Get OHLCV candlestick data for charts
+9. Get community trending tokens
+10. Get trending discussion topics
+11. Get latest crypto news
+12. Convert currency amounts
+13. Check API usage and limits
+
+## Tips
+
+- Use `/v1/key/info` to check your plan limits before heavy usage
+- Cache global metrics data as it updates every few minutes
+- Fear/greed index updates daily, no need for frequent polling
+- K-line data supports multiple intervals for different chart timeframes
+- Community trending data refreshes periodically throughout the day
+
+---
+
+## Document: Exchange API
+
+API reference for CoinMarketCap exchange endpoints including exchange info, volume, market pairs, and assets.
+
+URL: https://pro.coinmarketcap.com/api/documentation/ai-agent-hub/skills/cmc-api-exchange
+
+# Exchange API
+
+GitHub repo: [coinmarketcap-official/skills-for-ai-agents-by-CoinMarketCap](https://github.com/coinmarketcap-official/skills-for-ai-agents-by-CoinMarketCap)
+
+APIs for centralized cryptocurrency exchanges (Binance, Coinbase, Kraken, etc.) including metadata, trading volumes, market pairs, and asset holdings.
+
+## Authentication
+
+```bash
+curl -X GET "https://pro-api.coinmarketcap.com/v1/exchange/map" \
+  -H "X-CMC_PRO_API_KEY: your-api-key"
+```
+
+Get your API key at [https://pro.coinmarketcap.com/login](https://pro.coinmarketcap.com/login)
+
+**Base URL:** `https://pro-api.coinmarketcap.com`
+
+## API Overview
+
+| Endpoint | Description |
+|----------|-------------|
+| GET /v1/exchange/map | Map exchange names to CMC IDs |
+| GET /v1/exchange/info | Exchange metadata (logo, URLs, description) |
+| GET /v1/exchange/listings/latest | List all exchanges with market data |
+| GET /v1/exchange/quotes/latest | Latest exchange volume and metrics |
+| GET /v1/exchange/quotes/historical | Historical exchange volume data |
+| GET /v1/exchange/market-pairs/latest | Trading pairs on an exchange |
+| GET /v1/exchange/assets | Assets held by an exchange |
+
+## Common Workflows
+
+### Get Exchange Information
+
+1. Call `/v1/exchange/map` with `slug=binance` to get the exchange ID
+2. Call `/v1/exchange/info` with the ID to get full metadata
+
+### Compare Exchange Volumes
+
+1. Call `/v1/exchange/listings/latest` to get all exchanges ranked by volume
+2. Use `sort=volume_24h` and `sort_dir=desc` for descending order
+
+### Analyze Trading Pairs
+
+1. Get the exchange ID from `/v1/exchange/map`
+2. Call `/v1/exchange/market-pairs/latest` with that ID
+3. Filter by `category=spot` or `category=derivatives`
+
+### Track Volume History
+
+1. Get the exchange ID from `/v1/exchange/map`
+2. Call `/v1/exchange/quotes/historical` with date range parameters
+
+## Query Parameters
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| id | string | CMC exchange ID (comma-separated for multiple) |
+| slug | string | Exchange slug (e.g., "binance") |
+| convert | string | Currency for price conversion (default: USD) |
+| aux | string | Additional fields to include in response |
+
+## Common Use Cases
+
+1. Get exchange information by name
+2. Find an exchange's CMC ID
+3. Get top exchanges by volume
+4. Get only spot or derivatives exchanges
+5. Get current volume for a specific exchange
+6. Compare volume across multiple exchanges
+7. Get historical volume for an exchange
+8. Get all trading pairs on an exchange
+9. Find BTC pairs on an exchange
+10. Get perpetual/futures pairs on an exchange
+11. Check exchange reserves (proof-of-reserves)
+12. Find exchanges that list a specific coin
+
+---
+
+## Document: DEX API
+
+API reference for CoinMarketCap DEX endpoints including token lookup, pools, transactions, trending, and security analysis.
+
+URL: https://pro.coinmarketcap.com/api/documentation/ai-agent-hub/skills/cmc-api-dex
+
+# DEX API
+
+GitHub repo: [coinmarketcap-official/skills-for-ai-agents-by-CoinMarketCap](https://github.com/coinmarketcap-official/skills-for-ai-agents-by-CoinMarketCap)
+
+On-chain token data APIs for decentralized exchanges like Uniswap, PancakeSwap, and Raydium.
+
+## Authentication
+
+```bash
+curl -X GET "https://pro-api.coinmarketcap.com/v1/dex/platform/list" \
+  -H "X-CMC_PRO_API_KEY: your-api-key"
+```
+
+Get your API key at [https://pro.coinmarketcap.com/login](https://pro.coinmarketcap.com/login)
+
+**Base URL:** `https://pro-api.coinmarketcap.com`
+
+## POST vs GET Endpoints
+
+Many DEX endpoints use POST for complex queries with body parameters:
+- **GET** endpoints pass parameters as query strings
+- **POST** endpoints pass parameters in JSON body with `Content-Type: application/json`
+
+## API Overview
+
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| /v1/dex/token | GET | Token details by platform/address |
+| /v1/dex/token/price | GET | Latest DEX price for a token |
+| /v1/dex/token/price/batch | POST | Batch token prices |
+| /v1/dex/token/pools | GET | Liquidity pools for a token |
+| /v1/dex/token-liquidity/query | GET | Token liquidity over time |
+| /v1/dex/tokens/batch-query | POST | Batch token metadata |
+| /v1/dex/tokens/transactions | GET | Recent DEX transactions |
+| /v1/dex/tokens/trending/list | POST | Trending DEX tokens |
+| /v4/dex/pairs/quotes/latest | GET | Latest DEX pair quotes |
+| /v4/dex/spot-pairs/latest | GET | DEX spot pairs listing |
+| /v1/dex/platform/list | GET | List supported DEX platforms |
+| /v1/dex/platform/detail | GET | Platform details |
+| /v1/dex/search | GET | Search DEX tokens/pairs |
+| /v1/dex/gainer-loser/list | POST | Top DEX gainers/losers |
+| /v1/dex/liquidity-change/list | GET | Tokens with liquidity changes |
+| /v1/dex/meme/list | POST | Meme tokens on DEX |
+| /v1/dex/new/list | POST | Newly discovered DEX tokens |
+| /v1/dex/security/detail | GET | Token security/risk signals |
+
+## Common Workflows
+
+### Get DEX Token Information
+
+1. Search for token: `/v1/dex/search?keyword=PEPE`
+2. Get token details: `/v1/dex/token?network_slug=ethereum&contract_address=0x...`
+3. Check security risks: `/v1/dex/security/detail?network_slug=ethereum&contract_address=0x...`
+
+### Analyze Token Liquidity
+
+1. Get token pools: `/v1/dex/token/pools?network_slug=ethereum&contract_address=0x...`
+2. Get liquidity history: `/v1/dex/token-liquidity/query?network_slug=ethereum&contract_address=0x...`
+
+### Find Trending Tokens
+
+1. Get trending tokens: POST `/v1/dex/tokens/trending/list` with filters
+2. Get gainers/losers: POST `/v1/dex/gainer-loser/list`
+3. Find new tokens: POST `/v1/dex/new/list`
+
+## Key Parameters
+
+Most DEX endpoints require:
+- `network_slug` or `platform_crypto_id`: Identifies the blockchain (ethereum, solana, bsc)
+- `contract_address`: The token's on-chain contract address
+
+Use `/v1/dex/platform/list` to get valid network slugs and platform IDs.
+
+## Common Use Cases
+
+1. Get DEX token price by contract address
+2. Find a token's contract address by name
+3. Get prices for multiple tokens at once
+4. Check token security before trading
+5. Find liquidity pools for a token
+6. Find trending DEX tokens
+7. Find today's biggest DEX gainers
+8. Find newly launched tokens
+9. Detect potential rug pulls (liquidity removal)
+10. Get recent trades for a token
+11. Get supported networks and DEXs
+12. Get meme coins
+
+---
+
+## Document: Cryptocurrency API
+
+API reference for CoinMarketCap cryptocurrency endpoints including quotes, listings, OHLCV, trending, and categories.
+
+URL: https://pro.coinmarketcap.com/api/documentation/ai-agent-hub/skills/cmc-api-crypto
+
+# Cryptocurrency API
+
+GitHub repo: [coinmarketcap-official/skills-for-ai-agents-by-CoinMarketCap](https://github.com/coinmarketcap-official/skills-for-ai-agents-by-CoinMarketCap)
+
+REST API endpoints for retrieving price data, market listings, historical quotes, trending coins, and token metadata.
+
+## Authentication
+
+All requests require an API key in the header.
+
+```bash
+curl -X GET "https://pro-api.coinmarketcap.com/v1/cryptocurrency/listings/latest" \
+  -H "X-CMC_PRO_API_KEY: your-api-key"
+```
+
+Get your API key at [https://pro.coinmarketcap.com/login](https://pro.coinmarketcap.com/login)
+
+**Base URL:** `https://pro-api.coinmarketcap.com`
+
+## API Overview
+
+| Endpoint | Description |
+|----------|-------------|
+| GET /v1/cryptocurrency/categories | List all categories with market metrics |
+| GET /v1/cryptocurrency/category | Single category details |
+| GET /v1/cryptocurrency/listings/historical | Historical listings snapshot |
+| GET /v1/cryptocurrency/listings/latest | Current listings with market data |
+| GET /v1/cryptocurrency/listings/new | Newly added cryptocurrencies |
+| GET /v1/cryptocurrency/map | Map names/symbols to CMC IDs |
+| GET /v1/cryptocurrency/trending/gainers-losers | Top gainers and losers |
+| GET /v1/cryptocurrency/trending/latest | Currently trending coins |
+| GET /v1/cryptocurrency/trending/most-visited | Most visited on CMC |
+| GET /v2/cryptocurrency/info | Static metadata (logo, description, URLs) |
+| GET /v2/cryptocurrency/market-pairs/latest | Trading pairs for a coin |
+| GET /v2/cryptocurrency/ohlcv/historical | Historical OHLCV candles |
+| GET /v2/cryptocurrency/ohlcv/latest | Latest OHLCV data |
+| GET /v2/cryptocurrency/price-performance-stats/latest | Price performance stats |
+| GET /v2/cryptocurrency/quotes/latest | Latest price quotes |
+| GET /v3/cryptocurrency/quotes/historical | Historical price quotes |
+
+## Common Workflows
+
+### Get Token Price by Symbol
+
+```bash
+# Step 1: Get CMC ID for ETH
+curl -X GET "https://pro-api.coinmarketcap.com/v1/cryptocurrency/map?symbol=ETH" \
+  -H "X-CMC_PRO_API_KEY: your-api-key"
+
+# Step 2: Get price quote (using id=1027 for ETH)
+curl -X GET "https://pro-api.coinmarketcap.com/v2/cryptocurrency/quotes/latest?id=1027" \
+  -H "X-CMC_PRO_API_KEY: your-api-key"
+```
+
+### Get Top 100 Coins by Market Cap
+
+```bash
+curl -X GET "https://pro-api.coinmarketcap.com/v1/cryptocurrency/listings/latest?limit=100&sort=market_cap" \
+  -H "X-CMC_PRO_API_KEY: your-api-key"
+```
+
+### Get Historical Price Data
+
+```bash
+curl -X GET "https://pro-api.coinmarketcap.com/v3/cryptocurrency/quotes/historical?id=1&time_start=2024-01-01&time_end=2024-01-31&interval=daily" \
+  -H "X-CMC_PRO_API_KEY: your-api-key"
+```
+
+### Get Token Metadata
+
+```bash
+curl -X GET "https://pro-api.coinmarketcap.com/v2/cryptocurrency/info?id=1,1027" \
+  -H "X-CMC_PRO_API_KEY: your-api-key"
+```
+
+## Common Use Cases
+
+1. Get current price of a token
+2. Find a token's CMC ID from symbol or name
+3. Get a token by contract address
+4. Get top 100 coins by market cap
+5. Find coins in a price range
+6. Get historical price at a specific date
+7. Build a price chart (OHLCV data)
+8. Find where a coin trades
+9. Get all-time high and distance from ATH
+10. Find today's biggest gainers
+11. Discover newly listed coins
+12. Get all tokens in a category (e.g., DeFi)
+
+## Error Handling
+
+| Code | Meaning |
+|------|---------|
+| 200 | Success |
+| 400 | Bad request (invalid parameters) |
+| 401 | Unauthorized (invalid API key) |
+| 403 | Forbidden (endpoint not available on your plan) |
+| 429 | Rate limit exceeded |
+| 500 | Server error |
+
+## Response Format
+
+```json
+{
+  "status": {
+    "timestamp": "2024-01-15T12:00:00.000Z",
+    "error_code": 0,
+    "error_message": null,
+    "credit_count": 1
+  },
+  "data": { ... }
+}
+```
+
+---
+
+## Document: CoinMarketCap API Overview
+
+Overview of the CoinMarketCap Pro API, including available data, common use cases, and where to start.
+
+URL: https://pro.coinmarketcap.com/api/documentation
+
+# CoinMarketCap API Overview
+
+The CoinMarketCap API is built for teams that want the **most trusted** and **comprehensive** cryptocurrency market data in the industry. As the industry authority and the world’s number one cryptocurrency market data API, it gives developers access to real-time and historical market data, exchange data, global metrics, and DEX data through a single REST API.
+
+Trusted by everyone from individual developers to major finance and crypto institutions, the API combines broad coverage with production-ready scale: **14 years** of historical data, **2.4 million+** tracked assets, **790+** exchanges, **40+** endpoints, and more than **1 billion** API calls per month. Whether you are building a wallet, exchange, portfolio tracker, analytics platform, trading system, AI product, or research workflow, CoinMarketCap provides the depth and reliability needed to power serious crypto applications.
+
+The platform is designed to scale with your product, from free experimentation to enterprise deployment. Developers can start with a free plan, while commercial and professional tiers unlock higher call limits, broader endpoint access, longer historical coverage, and enterprise-grade licensing. Most plans offer data refreshed every **1 minute**, making it well suited for live experiences, market intelligence, and high-frequency crypto products.
+
+## What data is available
+
+- **Market data**: Live cryptocurrency prices, market cap, volume, listings, quotes, and historical OHLCV data.
+- **Exchange data**: Exchange metadata, rankings, market pairs, volume data, and proof-of-reserves assets.
+- **DEX data**: On-chain token, pair, liquidity, platform, and OHLCV data across decentralized ecosystems.
+- **Market intelligence**: Global market metrics, Fear and Greed, content, community trends, and broader market signals.
+
+## Common use cases
+
+- Build live price widgets, watchlists, and portfolio dashboards
+- Power ranked market views, screeners, and discovery experiences
+- Fetch historical data for charts, analytics, and backtesting
+- Monitor exchange activity, market pairs, and liquidity
+- Add DEX token, pair, and on-chain market data to your product
+- Combine market data with headlines, trends, and community signals
+
+## Start here
+
+1. **Get an API key**
+
+   Sign up at [pro.coinmarketcap.com](https://pro.coinmarketcap.com/signup) to receive your API key.
+
+1. **Make your first API call**
+
+   Follow the [quick start guide](https://pro.coinmarketcap.com/api/documentation/guides/quick-start) to make one successful request against the production API.
+
+1. **Choose the right part of the API**
+
+   Use [common workflows](https://pro.coinmarketcap.com/api/documentation/guides/common-workflows) or [choose an endpoint](https://pro.coinmarketcap.com/api/documentation/pro-api-reference/endpoint-overview) to find the right starting point.
+
+## Explore the docs
+
+- [Quick start](/api/documentation/guides/quick-start): Make your first production request and understand what to do next.
+- [Common workflows](/api/documentation/guides/common-workflows): Start from the task you want to accomplish, not just the category tree.
+- [Choose an endpoint](/api/documentation/pro-api-reference/endpoint-overview): Find the right API family for prices, history, exchange data, DEX data, and more.
+- [Response format and IDs](/api/documentation/guides/standards-and-conventions): Understand response structure, stable IDs, timestamps, and how to bundle requests.
+- [Rate limits and troubleshooting](/api/documentation/guides/errors-and-rate-limits): See the main error types, rate limit behavior, and practical troubleshooting guidance.
+- [Best practices](/api/documentation/guides/best-practices): Learn the patterns that scale well for production integrations.
+
+## AI Agent Hub
+
+Use the AI Agent Hub to bring CoinMarketCap data into AI agents and development environments. Connect via MCP for real-time data, use x402 for pay-per-request access, or install pre-built skills for market reports and token research.
+
+- [IDE integrations](/api/documentation/ai-agent-hub): Set up CMC MCP in Cursor, Claude Code, or Windsurf.
+- [Skills for AI Agents](/api/documentation/ai-agent-hub/skills/overview): Pre-built workflows for market analysis and token research.
+- [x402 Protocol](/api/documentation/ai-agent-hub/x402): Pay $0.01 USDC per request — no API key needed.
+
+## Changelog
+
+Track API updates, new endpoints, and version history.
+
+- [Version history](/api/documentation/changelog): Full changelog of API updates from the latest release back to the original launch.
+
+Additional answers to common questions can be found in the [CoinMarketCap API FAQ](https://pro.coinmarketcap.com/api/documentation/faq).
+
+---
+
+## Document: CoinMarketCap AI Agent Hub
+
+Compare CoinMarketCap AI Agent Hub options for IDE integrations, MCP clients, x402 access, and reusable agent skills.
+
+URL: https://pro.coinmarketcap.com/api/documentation/ai-agent-hub
+
+# CoinMarketCap AI Agent Hub
+
+> For the complete CoinMarketCap API documentation index, see [llms.txt](https://pro.coinmarketcap.com/llms.txt). For a single-file dump of all documentation, see [llms-full.txt](https://pro.coinmarketcap.com/llms-full.txt).
+
+Use this page to choose the fastest path through the CoinMarketCap AI Agent Hub for editors, assistants, and agents.
+
+## Choose your path
+
+| If you want to... | Start here | Best for |
+|---|---|---|
+| Use CoinMarketCap inside Cursor, Claude Code, or Windsurf | [IDE integrations](#ide-integrations) | Interactive coding, research, and agent-assisted development |
+| Work directly in the terminal with a CoinMarketCap-native runtime | [CMC CLI](https://pro.coinmarketcap.com/api/documentation/ai-agent-hub/cmc-cli) | Shell workflows, automation, and agent runs that benefit from stable command output |
+| Connect any MCP-compatible client to live CMC data | [MCP](https://pro.coinmarketcap.com/api/documentation/ai-agent-hub/mcp) | Real-time tool access with an API key |
+| Pay per request without managing an API key | [x402](https://pro.coinmarketcap.com/api/documentation/ai-agent-hub/x402) | Experiments, episodic usage, and agent workflows with on-chain payment |
+| Reuse pre-built workflows like market reports and token research | [Skills for AI Agents](https://pro.coinmarketcap.com/api/documentation/ai-agent-hub/skills/overview) | Faster repeatable workflows on top of MCP, x402, or direct API integrations |
+| Build your own application logic instead of using AI-specific tooling | [REST API docs](https://pro.coinmarketcap.com/api/documentation/pro-api-reference/endpoint-overview) | Custom backends, apps, and integrations |
+
+## Fastest way to get started
+
+- If you want the quickest hands-on experience, start with an IDE integration and connect the CoinMarketCap MCP server.
+- If you want a shell-native workflow with stable output contracts, start with CMC CLI.
+- If you already know you want a protocol-level integration, choose MCP or x402 directly.
+- If you want reusable prompts and workflows, start with Skills after you choose your underlying data-access path.
+
+## IDE Integrations
+
+Connect the CoinMarketCap MCP server to your IDE so the AI assistant can access live crypto prices, market data, technical analysis, and more while you code.
+
+- [Cursor](/api/documentation/ai-agent-hub/cursor): Add CMC MCP to Cursor for real-time crypto data in chat.
+- [Claude Code](/api/documentation/ai-agent-hub/claude-code): Connect CMC MCP to Claude Code for terminal-based crypto intelligence.
+- [Windsurf](/api/documentation/ai-agent-hub/windsurf): Give Cascade access to CMC data via MCP.
+
+## Choose between MCP and x402
+
+- Use **CMC CLI** when you want terminal-native access, automation, and reproducible command-line workflows.
+- Use **MCP** when you have a CoinMarketCap API key and want stable real-time access in an IDE or another MCP-compatible client.
+- Use **x402** when you want pay-per-request access and do not want to manage an API key or subscription for the integration itself.
+- Use **Skills** when you want reusable workflows layered on top of MCP, x402, or direct REST API integrations.
+
+## Terminal-native workflows
+
+Use the CoinMarketCap CLI when you want to stay close to the shell and keep the workflow scriptable.
+
+- [CMC CLI](/api/documentation/ai-agent-hub/cmc-cli): Install a terminal-native CoinMarketCap runtime for JSON output, CSV export, dry-run previews, and interactive terminal workflows.
+
+## Data access protocols
+
+These are the two protocol-level ways to connect AI agents to live CoinMarketCap data:
+
+- [x402](/api/documentation/ai-agent-hub/x402): Pay-per-request data access via USDC on Base. No API key or subscription required — just $0.01 per request.
+- [MCP](/api/documentation/ai-agent-hub/mcp): Model Context Protocol server for real-time crypto data. Connect any MCP-compatible client to CoinMarketCap.
+
+## Skills for AI Agents
+
+Skills are pre-built workflows that help an AI agent use CoinMarketCap data more effectively. Use them when you want repeatable behavior such as market reports, token research, or direct API integration patterns.
+
+| Category | Skills | What they do |
+|----------|--------|-------------|
+| [MCP Skills](https://pro.coinmarketcap.com/api/documentation/ai-agent-hub/skills/cmc-mcp) | CMC MCP, Market Report, Crypto Research | Real-time data via MCP — prices, technical analysis, holder metrics, market reports, and token due diligence |
+| [x402 Skills](https://pro.coinmarketcap.com/api/documentation/ai-agent-hub/skills/cmc-x402) | CMC x402 | Pay-per-request data access with on-chain USDC payments, including MCP endpoint for AI agents |
+| [API Integration Skills](https://pro.coinmarketcap.com/api/documentation/ai-agent-hub/skills/cmc-api-crypto) | Crypto, DEX, Exchange, Market | Direct REST API integration covering cryptocurrency, DEX, exchange, and market-wide data |
+
+If you want a terminal-native runtime instead of a reusable skill, use [CMC CLI](https://pro.coinmarketcap.com/api/documentation/ai-agent-hub/cmc-cli).
+
+- [Browse all skills](/api/documentation/ai-agent-hub/skills/overview): View the full catalog of skills with installation instructions and detailed documentation.
+
+## What a first success looks like
+
+- **IDE integration**: your editor can list CoinMarketCap tools and answer a live market question
+- **CMC CLI**: your terminal can return stable JSON or table output for a live market command
+- **MCP**: your client can connect to `https://mcp.coinmarketcap.com/mcp` and discover tools
+- **x402**: your request receives a `402 Payment-Required` response and then succeeds after payment handling
+- **Skills**: your agent can run a structured workflow such as a market report or token research task
+
+:::note
+AI agent integrations in the hub are in beta. Features and setup steps may change.
+:::
+
+---
+
+## Document: CoinMarketCap API Version History
+
+Complete CoinMarketCap API release history with endpoint additions, changes, and deprecations.
+
+URL: https://pro.coinmarketcap.com/api/documentation/changelog
+
+# CoinMarketCap API Version History
+
+The CoinMarketCap API utilizes [Semantic Versioning](https://semver.org/) in the format `major.minor.patch`. The API request path includes a major version such as `/v1/`, `/v2/`, or `/v3/`. Non-breaking `minor` and `patch` updates are released regularly and may include new endpoints, data points, and API plan features. *This means you can expect new properties to become available in existing endpoints, while any breaking change will be introduced under a new major version with legacy versions supported unless otherwise stated.*
+
+<h3 id="v3-0-1-on-mar-19-2026">v3.0.1 on Mar 19, 2026</h3>
+
+- Migrated the CoinMarketCap Pro API docs to the new documentation site with updated navigation, onboarding guides, workflow pages, and reference entry points.
+
+<h3 id="v2-0-10-on-oct-14-2024">v2.0.10 on Oct 14, 2024</h3>
+
+- `/v3/fear-and-greed/latest` and `/v3/fear-and-greed/historical` now available to get CMC Fear and Greed Index
+
+<h3 id="v2-0-9-on-june-1-2023">v2.0.9 on June 1, 2023</h3>
+
+- `/v1/community/trending/topic` now available to get community trending topics.
+- `/v1/community/trending/token` now available to get community trending tokens.
+
+<h3 id="v2-0-8-on-november-25-2022">v2.0.8 on November 25, 2022</h3>
+
+- `/v1/exchange/assets` now available to get exchange assets in the form of token holdings.
+
+<h3 id="v2-0-7-on-september-19-2022">v2.0.7 on September 19, 2022</h3>
+
+- `/v1/content/posts/top` now available to get cryptocurrency-related top posts.
+- `/v1/content/posts/latest` now available to get cryptocurrency-related latest posts.
+- `/v1/content/posts/comments` now available to get comments of the post.
+
+<h3 id="v2-0-6-on-augest-18-2022">v2.0.6 on Augest 18, 2022</h3>
+
+- `/v1/content/latest` now available to get news/headlines and Alexandria articles.
+
+<h3 id="v2-0-5-on-augest-4-2022">v2.0.5 on Augest 4, 2022</h3>
+
+- `/v1/tools/postman` now API postman collection is available.
+
+<h3 id="v2-0-4-on-october-11-2021">v2.0.4 on October 11, 2021</h3>
+
+- `/v1/cryptocurrency/listings/latest` now includes `volume_change_24h`.
+- `/v2/cryptocurrency/quotes/latest` now includes `volume_change_24h`.
+
+<h3 id="v2-0-3-on-october-6-2021">v2.0.3 on October 6, 2021</h3>
+
+- `/v1/cryptocurrency/trending/latest` now supports `time_period` as an optional parameter.
+
+<h3 id="v2-0-2-on-september-13-2021">v2.0.2 on September 13, 2021</h3>
+
+- `/exchange/map` now available to Free tier users.
+- `/exchange/info` now available to Free tier users.
+
+<h3 id="v2-0-1-on-september-8-2021">v2.0.1 on September 8, 2021</h3>
+
+- `/exchange/market-pairs/latest` now includes `volume_24h`, `depth_negative_two`, `depth_positive_two` and `volume_percentage`.
+- `/exchange/listings/latest` now includes `open_interest`.
+
+<h3 id="v2-0-0-on-august-17-2021">v2.0.0 on August 17, 2021</h3>
+
+- By popular request we have added a number of new useful endpoints !
+- `/v1/cryptocurrency/categories` can be used to access a list of categories and their associated coins. You can also filter the list of categories by one or more cryptocurrencies.
+- `/v1/cryptocurrency/category` can be used to load only a single category of coins, listing the coins within that category.
+- `/v1/cryptocurrency/airdrops` can be used to access a list of CoinMarketCap's free airdrops. This defaults to a status of `ONGOING` but can be filtered to `UPCOMING` or `ENDED`. You can also query for a list of airdrops by cryptocurrency.
+- `/v1/cryptocurrency/airdrop` can be used to load a single airdrop and its associated cryptocurrency.
+- `/v1/cryptocurrency/trending/latest` can be used to load the most searched for cryptocurrencies within a period of time. This defaults to a `time_period` of the previous `24h`, but can be changed to `30d`, or `7d` for a larger window of time.
+- `/v1/cryptocurrency/trending/most-visited` can be used to load the most visited cryptocurrencies within a period of time. This defaults to a `time_period` of the previous `24h`, but can be changed to `30d`, or `7d` for a larger window of time.
+- `/v1/cryptocurrency/trending/gainers-losers` can be used to load the biggest gainers & losers within a period of time. This defaults to a `time_period` of the previous `24h`, but can be changed to `30d`, or `7d` for a larger window of time.
+
+<h3 id="v1-28-0-on-august-9-2021">v1.28.0 on August 9, 2021</h3>
+
+- `/v1/cryptocurrency/listings/latest` now includes `market_cap_dominance` and `fully_diluted_market_cap`.
+- `/v1/cryptocurrency/quotes/latest` now includes `market_cap_dominance` and `fully_diluted_market_cap`.
+
+<h3 id="v1-27-0-on-january-27-2021">v1.27.0 on January 27, 2021</h3>
+
+- `/v2/cryptocurrency/info` response format changed to allow for multiple coins per symbol.
+- `/v2/cryptocurrency/market-pairs/latest` response format changed to allow for multiple coins per symbol.
+- `/v2/cryptocurrency/quotes/historical` response format changed to allow for multiple coins per symbol.
+- `/v2/cryptocurrency/ohlcv/historical` response format changed to allow for multiple coins per symbol.
+- `/v2/tools/price-conversion` response format changed to allow for multiple coins per symbol.
+- `/v2/cryptocurrency/ohlcv/latest` response format changed to allow for multiple coins per symbol.
+- `/v2/cryptocurrency/price-performance-stats/latest` response format changed to allow for multiple coins per symbol.
+
+<h3 id="v1-26-0-on-january-21-2021">v1.26.0 on January 21, 2021</h3>
+
+- `/v2/cryptocurrency/quotes/latest` response format changed to allow for multiple coins per symbol.
+
+<h3 id="v1-25-0-on-april-17-2020">v1.25.0 on April 17, 2020</h3>
+
+- `/v1.1/cryptocurrency/listings/latest` now includes a more robust `tags` response with slug, name, and category.
+- `/cryptocurrency/quotes/historical` and `/cryptocurrency/quotes/latest` now include `is_active` and `is_fiat` in the response.
+
+<h3 id="v1-24-0-on-feb-24-2020">v1.24.0 on Feb 24, 2020</h3>
+
+- `/cryptocurrency/ohlcv/historical` has been modified to include the high and low timestamps.
+- `/exchange/market-pairs/latest` now includes `category` and `fee_type` market pair filtering options.
+- `/cryptocurrency/listings/latest` now includes `category` and `fee_type` market pair filtering options.
+
+<h3 id="v1-23-0-on-feb-3-2020">v1.23.0 on Feb 3, 2020</h3>
+
+- `/fiat/map` is now available to fetch the latest mapping of supported fiat currencies to CMC IDs.
+- `/exchange/market-pairs/latest` now includes `matched_id` and `matched_symbol` market pair filtering options.
+- `/cryptocurrency/listings/latest` now provides filter parameters `price_min`, `price_max`, `market_cap_min`, `market_cap_max`, `percent_change_24h_min`, `percent_change_24h_max`, `volume_24h_max`, `circulating_supply_min` and `circulating_supply_max` in addition to the existing `volume_24h_min` filter.
+
+<h3 id="v1-22-0-on-oct-16-2019">v1.22.0 on Oct 16, 2019</h3>
+
+- `/global-metrics/quotes/latest` now additionally returns `total_cryptocurrencies` and `total_exchanges` counts which include inactive projects who's data is still available via API.
+
+<h3 id="v1-21-0-on-oct-1-2019">v1.21.0 on Oct 1, 2019</h3>
+
+- `/exchange/map` now includes `sort` options including `volume_24h`.
+- `/cryptocurrency/map` fix for a scenario where `first_historical_data` and `last_historical_data` may not be populated.
+- Additional improvements to alphanumeric sorts.
+
+<h3 id="v1-20-0-on-sep-25-2019">v1.20.0 on Sep 25, 2019</h3>
+
+- By popular request you may now configure API plan usage notifications and email alerts in the [Developer Portal](https://pro.coinmarketcap.com/account/notifications).
+- `/cryptocurrency/map` now includes `sort` options including `cmc_rank`.
+
+<h3 id="v1-19-0-on-sep-19-2019">v1.19.0 on Sep 19, 2019</h3>
+
+- A new `/blockchain/` category of endpoints is now available with the introduction of our new `/v1/blockchain/statistics/latest` endpoint. This endpoint can be used to poll blockchain statistics data as seen in our [Blockchain Explorer](https://blockchain.coinmarketcap.com/chain/bitcoin).
+- Additional platform error codes are now surfaced during HTTP Status Code 401, 402, 403, and 429 scenarios as documented in [Rate limits, errors, and troubleshooting](https://pro.coinmarketcap.com/api/documentation/guides/errors-and-rate-limits).
+- OHLCV endpoints using the `convert` option now match historical UTC open period exchange rates with greater accuracy.
+- `/cryptocurrency/info` and `/exchange/info` now include the optional `aux` parameter where listing `status` can be requested in the list of supplemental properties.
+- `/cryptocurrency/listings/latest` and `/cryptocurrency/quotes/latest`: The accuracy of `percent_change_` conversions was improved when passing non-USD fiat `convert` options.
+- `/cryptocurrency/ohlcv/historical` and `/cryptocurrency/quotes/latest` now support relaxed request validation rules via the `skip_invalid` request parameter.
+- We also now return a helpful `notice` warning when API key usage is above 95% of daily and monthly API credit usage limits.
+
+<h3 id="v1-18-0-on-aug-28-2019">v1.18.0 on Aug 28, 2019</h3>
+
+- `/key/info` has been added as a new endpoint. It may be used programmatically monitor your key usage compared to the rate limit and daily/monthly credit limits available to your API plan as an alternative to using the [Developer Portal Dashboard](https://pro.coinmarketcap.com/account).
+- `/cryptocurrency/quotes/historical` and `/v1/global-metrics/quotes/historical` have new options to make charting tasks easier and more efficient. Use the new `aux` parameter to cut out response properties you don't need and include the new `search_interval` timestamp to normalize disparate historical records against the same `interval` time periods.
+- A 4 hour interval option `4h` was added to all historical time series data endpoints.
+
+<h3 id="v1-17-0-on-aug-22-2019">v1.17.0 on Aug 22, 2019</h3>
+
+- `/cryptocurrency/price-performance-stats/latest` has been added as our 21st endpoint! It returns launch price ROI, all-time high / all-time low, and other price stats over several supported time periods.
+- `/cryptocurrency/market-pairs/latest` now has the ability to filter all active markets for a cryptocurrency to specific base/quote pairs. Want to return only `BTC/USD` and `BTC/USDT` markets? Just pass `?symbol=BTC&matched_symbol=USD,USDT` or `?id=1&matched_id=2781,825`.
+- `/cryptocurrency/market-pairs/latest` now features `sort` options including `cmc_rank` to reproduce the [methodology](https://coinmarketcap.com/methodology/) based sort on pages like [Bitcoin Markets](https://coinmarketcap.com/currencies/bitcoin/#markets).
+- `/cryptocurrency/market-pairs/latest` can now return any exchange level CMC notices affecting a market via the new `notice` `aux` parameter.
+- `/cryptocurrency/quotes/latest` will now continue to return the last updated price data for cryptocurrency that have transitioned to an `inactive` state instead of returning an HTTP 400 error. These active coins that have gone inactive can easily be identified as having a `num_market_pairs` of `0` and a stale `last_updated` date.
+- `/exchange/info` now includes a brief text summary for most exchanges as `description`.
+
+<h3 id="v1-16-0-on-aug-9-2019">v1.16.0 on Aug 9, 2019</h3>
+
+- We've introduced a new partners category of endpoints for convenient access to 3rd party crypto data. [FlipSide Crypto](https://www.flipsidecrypto.com/)'s [Fundamental Crypto Asset Score](https://www.flipsidecrypto.com/fcas-explained) (FCAS) is now available as the first partner integration.
+- `/cryptocurrency/listings/latest` now provides a `volume_24h_min` filter parameter. It can be used when a threshold of volume is required like in our [Biggest Gainers and Losers](https://coinmarketcap.com/gainers-losers/) lists.
+- `/cryptocurrency/listings/latest` and `/cryptocurrency/quotes/latest` can now return rolling `volume_7d` and `volume_30d` via the supplemental `aux` parameter and sort options by these fields.
+- `volume_24h_reported`, `volume_7d_reported`, `volume_30d_reported`, and `market_cap_by_total_supply` are also now available through the `aux` parameter with an additional sort option for the latter.
+- `/cryptocurrency/market-pairs/latest` can now provide market price relative to the quote currency. Just pass `price_quote` to the supplemental `aux` parameter. This can be used to display consistent price data for a cryptocurrency across several markets no matter if it is the base or quote in each pair as seen in our [Bitcoin markets](https://coinmarketcap.com/currencies/bitcoin/#markets) price column.
+- When requesting a custom `sort` on our list based endpoints, numeric fields like `percent_change_7d` now conveniently return non-applicable `null` values last regardless of sort order.
+
+<h3 id="v1-15-0-on-jul-10-2019">v1.15.0 on Jul 10, 2019</h3>
+
+- `/cryptocurrency/map` and `/v1/exchange/map` now expose a 3rd listing state of `untracked` between `active` and `inactive` as outlined in our [methodology](https://coinmarketcap.com/methodology/). See endpoint documentation for additional details.
+- `/cryptocurrency/quotes/historical`, `/cryptocurrency/ohlcv/historical`, and `/exchange/quotes/latest` now support fetching multiple cryptocurrencies and exchanges in the same call.
+- `/global-metrics/quotes/latest` now updates more frequently, every minute. It aslo now includes `total_volume_24h_reported`, `altcoin_volume_24h`, `altcoin_volume_24h_reported`, and `altcoin_market_cap`.
+- `/global-metrics/quotes/historical` also includes these new dimensions along with historical `active_cryptocurrencies`, `active_exchanges`, and `active_market_pairs` counts.
+- We've also added a new `aux` auxiliary parameter to many endpoints which can be used to customize your request. You may request new supplemental data properties that are not returned by default or slim down your response payload by excluding default `aux` fields you don't need in endpoints like `/cryptocurrency/listings/latest`. `/cryptocurrency/market-pairs/latest` and `/exchange/market-pairs/latest` can now supply `market_url`, `currency_name`, and `currency_slug` for each market using this new parameter. `/exchange/listings/latest` can now include the exchange `date_launched`.
+
+<h3 id="v1-14-1-on-jun-14-2019-data-phase-1-methodology-updates">v1.14.1 on Jun 14, 2019 - DATA: Phase 1 methodology updates</h3>
+
+Per our [May 1 announcement](https://blog.coinmarketcap.com/2019/05/01/happy-6th-birthday-data-alliance-block-explorers-and-more/) of the Data Accountability & Transparency Alliance ([DATA](https://coinmarketcap.com/data-transparency-alliance/)), a platform [methodology](https://coinmarketcap.com/methodology/) update was published. No API changes are required but users should take note:
+
+- Exchanges that are not compliant with mandatory transparency requirements (Ability to surface live trade and order book data) will be excluded from VWAP price and volume calculations returned from our `/cryptocurrency/` and `/global-metrics/` endpoints going forward.
+- These exchanges will also return a `volume_24h_adjusted` value of 0 from our `/exchange/` endpoints like the exclusions based on market category and fee type. Stale markets (24h or older) will also be excluded. All exchanges will continue to return `exchange_reported` values as reported.
+- We welcome you to [learn more about the DATA alliance and become a partner](https://coinmarketcap.com/data-transparency-alliance/).
+
+<h3 id="v1-14-0-on-jun-3-2019">v1.14.0 on Jun 3, 2019</h3>
+
+- `/cryptocurrency/info` now include up to 5 block explorer URLs for each cryptocurrency including our brand new [Bitcoin and Ethereum Explorers](https://blockchain.coinmarketcap.com).
+- `/cryptocurrency/info` now provides links to most cryptocurrency white papers and technical documentation! Just reference the `technical_doc` array.
+- `/cryptocurrency/info` now returns a `notice` property that may highlight a significant event or condition that is impacting the cryptocurrency or how it is displayed. See the endpoint property description for more details.
+- `/exchange/info` also includes a `notice` property. This one may highlight a condition that is impacting the availability of an exchange's market data or the use of the exchange. See the endpoint property description for more details.
+- `/exchange/info` now includes the official launch date for each exchange as `date_launched`.
+- `/cryptocurrency/market-pairs/latest` and `/exchange/market-pairs/latest` now include market `category` (Spot, Derivatives, or OTC) and `fee_type` (Percentage, No Fees, Transactional Mining, or Unknown) for every market returned.
+- `/cryptocurrency/market-pairs/latest` now supports querying by cryptocurrency `slug`.
+- `/cryptocurrency/listings/latest` now includes a `market_cap_strict` sort option to apply a strict numeric sort on this field.
+
+<h3 id="v1-13-0-on-may-17-2019">v1.13.0 on May 17, 2019</h3>
+
+- You may now leverage CoinMarketCap IDs for currency `quote` conversions across all endpoints! Just utilize the new `convert_id` parameter instead of the `convert` parameter. Learn more about creating robust integrations with CMC IDs in our [Best practices](https://pro.coinmarketcap.com/api/documentation/guides/best-practices).
+- We've updated requesting cryptocurrencies by `slug` to support legacy names from past cryptocurrency rebrands. For example, a request to `/cryptocurrency/quotes/latest?slug=antshares` successfully returns the cryptocurrency by current slug `neo`.
+- We've extended the brief text summary included as `description` in `/cryptocurrency/info` to now cover all cryptocurrencies!
+- We've added the fetch-by-slug option to `/cryptocurrency/ohlcv/historical`.
+- Premium subscription users: On your next billing period we'll conveniently switch to displaying monthly/daily credit usage relative to your monthly billing period instead of calendar month and UTC midnight. Click the `?` on our updated [API Key Usage](https://pro.coinmarketcap.com/account) panel for more details.
+
+<h3 id="v1-12-1-on-may-1-2019">v1.12.1 on May 1, 2019</h3>
+
+- To celebrate CoinMarketCap's 6th anniversary we've upgraded the crypto API to make more of our data available at each tier!
+- Our free Basic tier may now access live price conversions via `/tools/price-conversion`.
+- Our Hobbyist tier now supports a month of historical price conversions with `/tools/price-conversion` using the `time` parameter. We've also made this plan 12% cheaper at $29/mo with a yearly subscription or $35/mo month-to-month.
+- Our Startup tier can now access a month of cryptocurrency OHLCV data via `/cryptocurrency/ohlcv/historical` along with `/tools/price-conversion`.
+- Our Standard tier has been upgraded from 1 month to now 3 months of historical market data access across all historical endpoints.
+- Our Enterprise, Professional, and Standard tiers now get access to a new #18th endpoint `/cryptocurrency/listings/historical`! Utilize this endpoint to fetch daily historical crypto rankings from the past. We've made historical ranking snapshots available all the way back to 2013!
+- All existing accounts and subscribers may take advantage of these updates. If you haven't signed up yet you can check out our updated plans on our [feature comparison page](https://coinmarketcap.com/api/).
+
+<h3 id="v1-12-0-on-apr-28-2019">v1.12.0 on Apr 28, 2019</h3>
+
+- Our API docs now supply API request examples in 7 languages for every endpoint: cURL, Node.js, Python, PHP, Java, C#, and Go.
+- Many customer sites format cryptocurrency data page URLs by SEO friendly names like we do here: [coinmarketcap.com/currencies/binance-coin](https://coinmarketcap.com/currencies/binance-coin/). We've made it much easier for these kinds of pages to dynamically reference data from our API. You may now request cryptocurrencies from our `/cryptocurrency/info` and `/cryptocurrency/quotes/latest` endpoints by `slug` as an alternative to `symbol` or `id`. As always, you can retrieve a quick list of every cryptocurrency we support and it's `id`, `symbol`, and `slug` via our `/cryptocurrency/map` endpoint.
+- We've increased `convert` limits on historical endpoints once more. You can now request historical market data in up to 3 conversion options at a time like we do internally to display line charts [like this](https://coinmarketcap.com/currencies/0x/#charts). You can now fetch market data converted into your primary cryptocurrency, fiat currency, and a parent platform cryptocurrency (Ethereum in this case) all in one call!
+
+<h3 id="v1-11-0-on-mar-25-2019">v1.11.0 on Mar 25, 2019</h3>
+
+- We now supply a brief text summary for each cryptocurrency in the `description` field of `/cryptocurrency/info`. The majority of top cryptocurrencies include this field with more coming in the future.
+- We've made `convert` limits on some endpoints and plans more flexible. Historical endpoints are now allowed 2 price conversion options instead of 1. Professional plan convert limit has doubled from 40 to 80. Enterprise has tripled from 40 to 120.
+- CoinMarketCap Market ID: We now return `market_id` in /market-pairs/latest endpoints. Like our cryptocurrency and exchange IDs, this ID can reliably be used to uniquely identify each market *permanently* as this ID never changes.
+- Market symbol overrides: We now supply an `exchange_symbol` in addition to `currency_symbol` for each market pair returned in our /market-pairs/latest endpoints. This allows you to reference the currency symbol provided by the exchange in case it differs from the CoinMarketCap identified symbol that the majority of markets use.
+
+<h3 id="v1-10-1-on-jan-30-2019">v1.10.1 on Jan 30, 2019</h3>
+
+- Our API health status dashboard is now public at http://status.coinmarketcap.com.
+- We now conveniently return `market_cap` in our `/cryptocurrency/ohlcv/historical` endpoint so you don't have to make a separately query when fetching historic OHLCV data.
+- We've improved the accuracy of percent_change_1h / 24h / 7d calculations when using the `convert` option with our latest cryptocurrency endpoints.
+- `/cryptocurrency/market-pairs/latest` now updates more frequently, every 1 minute.
+- Contract Address and parent platform metadata changes are reflected on the API much more quickly.
+
+<h3 id="v1-9-0-on-jan-8-2019">v1.9.0 on Jan 8, 2019</h3>
+
+- Did you know there are currently 684 active USD market pairs tracked by CoinMarketCap? You can now pass any [fiat CoinMarketCap ID](https://pro.coinmarketcap.com/api/documentation/guides/standards-and-conventions) to the `/cryptocurrency/market-pairs/latest` `id` parameter to list all active markets across all exchanges for a given fiat currency.
+- We've added a new dedicated migration FAQ page for users migrating from our old Public API to the new API [here](https://pro.coinmarketcap.com/migrate). It includes a helpful tutorial link for Excel and Google Sheets users who need help migrating.
+- Cryptocurrency and exchange symbol and name rebrands are now reflected in the API much more quickly.
+
+<h3 id="v1-8-0-on-dec-27-2018">v1.8.0 on Dec 27, 2018</h3>
+
+- We now supply the contract address for all cryptocurrencies on token platforms like Ethereum! Look for  `token_address` in the `platform` property of our cryptocurrency endpoints like `/cryptocurrency/map` and `/cryptocurrency/listings/latest`.
+- All 96 non-USD fiat conversion rates now update every 1 minute like our USD rates! This includes using the `convert` option for all /latest market data endpoints as well as our `/tools/price-conversion` endpoint.
+
+<h3 id="v1-7-0-on-dec-18-2018">v1.7.0 on Dec 18, 2018</h3>
+
+- We've upgraded our fiat (government) currency conversion support from our original 32 to now cover 93 fiat currencies!
+- We've also introduced currency conversions for four precious metals: Gold, Silver, Platinum, and Palladium!
+- You may pass all 97 fiat currency options to our `/tools/price-conversion` endpoint using either the `symbol` or `id` parameter. Using CMC `id` is always the most robust option. CMC IDs are now included in the [API response format, IDs, and timestamps guide](https://pro.coinmarketcap.com/api/documentation/guides/standards-and-conventions).
+- All historical endpoints including our price conversion endpoint with "time" parameter now support historical fiat conversions back to 2013!
+
+<h3 id="v1-6-0-on-dec-4-2018">v1.6.0 on Dec 4, 2018</h3>
+
+- We've rolled out another top requested feature, giving you access to platform metadata for cryptocurrencies that are tokens built on other cryptocurrencies like Ethereum. Look for the new `platform` property on our cryptocurrency endpoints like `/cryptocurrency/listings/latest` and `/cryptocurrency/map`.
+- We've also added a **CMC equivalent pages** section to our endpoint docs so you can easily determine which endpoints to use to reproduce functionality on the main coinmarketcap.com website.
+- Welcome Public API users! With the migration of our legacy Public API into the Professional API we now have 1 unified API at CMC. This API is now known as the CoinMarketCap API and can always be accessed at [coinmarketcap.com/api](https://coinmarketcap.com/api).
+
+<h3 id="v1-5-0-on-nov-28-2018">v1.5.0 on Nov 28, 2018</h3>
+
+- `/cryptocurrency/ohlcv/historical` now supports hourly OHLCV! Use time_period="hourly" and don't forget to set the "interval" parameter to "hourly" or one of the new hourly interval options.
+- `/tools/price-conversion` now supports historical USD conversions.
+- We've increased the minute based rate limits for several plans. Standard plan has been upgraded from 30 to 60 calls per minute. Professional from 60 to 90. Enterprise from 90 to 120.
+- We now include some customer and data partner logos and testimonials on the CoinMarketCap API site. Visit pro.coinmarketcap.com to check out what our enterprise customers are saying and contact us at api@coinmarketcap.com if you'd like to get added to the list!
+
+<h3 id="v1-4-0-on-nov-20-2018">v1.4.0 on Nov 20, 2018</h3>
+
+- `/tools/price-conversion` can now provide the latest crypto-to-crypto conversions at 1 minute accuracy with extended decimal precision upwards of 8 decimal places.
+- `/tools/price-conversion` now supports historical crypto-to-crypto conversions leveraging our closest averages to the specified "time" parameter.
+- All of our historical data endpoints now support historical cryptocurrency conversions using the "convert" parameter. The closest reference price for each "convert" option against each historical datapoint is used for each conversion.
+- `/global-metrics/quotes/historical` now supports the "convert" parameter.
+
+<h3 id="v1-3-0-on-nov-9-2018">v1.3.0 on Nov 9, 2018</h3>
+
+- The latest UTC day's OHLCV record is now available sooner. 5-10 minutes after each UTC midnight.
+- We're now returning a new `vol_24h_adjusted` property on  `/exchange/quotes/latest` and `/exchange/listings/latest` and a sort option for the latter so you may now list exchange rankings by CMC adjusted volume as well as exchange reported.
+- We are now returning a `tags` property with `/cryptocurrency/listings/latest` with our first tag `mineable` so you know which currencies are mineable. Additional tags will be introduced in the future.
+- We've increased the "convert" parameter limit from 32 to 40 for plans that support max conversion limits.
+
+<h3 id="v1-2-0-on-oct-30-2018">v1.2.0 on Oct 30, 2018</h3>
+
+- Our exchange `listing` and `quotes` endpoints now update much more frequently! Every 1 minute instead of every 5 minutes.
+- These latest exchange data endpoints also now return `volume_7d / 30d` and `percent_change_volume_24h / 7d / 30d` along with existing data.
+- We've updated our documentation for `/exchange/market-pairs/latest` to reflect that it receives updates every 1 minute, not 5, since June.
+
+<h3 id="v1-1-4-on-oct-19-2018">v1.1.4 on Oct 19, 2018</h3>
+
+- We've improved our tiered support inboxes by plan type to answer support requests even faster.
+- You may now opt-in to our API mailing list on signup. If you haven't signed up you can [create an account](https://pro.coinmarketcap.com/signup).
+
+<h3 id="v1-1-3-on-oct-12-2018">v1.1.3 on Oct 12, 2018</h3>
+
+- We've increased the rate limit of our free Basic plan from 10 calls a minute to 30.
+- We've increased the rate limit of our Hobbyist plan from 15 to 30.
+
+<h3 id="v1-1-2-on-oct-5-2018">v1.1.2 on Oct 5, 2018</h3>
+
+- We've updated our most popular /cryptocurrency/listings/latest endpoint to cost 1 credit per 200 data points instead of 100 to give customers more flexibility.
+- By popular request we've introduced a new $33 personal use Hobbyist tier with access to our currency conversion calculator endpoint.
+- Our existing commercial use Hobbyist tier has been renamed to Startup. Our free Starter tier has been renamed to Basic.
+
+<h3 id="v1-1-1-on-sept-28-2018">v1.1.1 on Sept 28, 2018</h3>
+
+- We've increased our monthly credit limits for our smaller plans! Existing customers plans have also been updated.
+- Our free Starter plan has been upgraded from 6 to 10k monthly credits (66% increase).
+- Our Hobbyist plan has been upgraded from 60k to 120k monthly credits (100% increase).
+- Our Standard plan has been upgraded from 300 to 500k monthly credits (66% increase).
+
+<h3 id="v1-1-0-on-sept-14-2018">v1.1.0 on Sept 14, 2018</h3>
+
+- We've introduced our first new endpoint since rollout, active day OHLCV for Standard plan and above with `/v1/cryptocurrency/ohlcv/latest`
+
+<h3 id="v1-0-4-on-sept-7-2018">v1.0.4 on Sept 7, 2018</h3>
+
+- Subscription customers with billing renewal issues now receive an alert from our API during usage and an unpublished grace period before access is restricted.
+- API Documentation has been improved including an outline of credit usage cost outlined on each endpoint documentation page.
+
+<h3 id="v1-0-3-on-aug-24-2018">v1.0.3 on Aug 24, 2018</h3>
+- /v1/tools/price-conversion floating point conversion accuracy was improved.
+- Added ability to query for non-alphanumeric crypto symbols like $PAC
+- Customers may now update their billing card on file with an active Stripe subscription at pro.coinmarketcap.com/account/plan
+
+---
+
+## Document: CoinMarketCap API FAQ
+
+Quick answers to common questions about getting started, choosing endpoints, rate limits, and browser usage for the CoinMarketCap API.
+
+URL: https://pro.coinmarketcap.com/api/documentation/faq
+
+# CoinMarketCap API FAQ
+
+Use this page for fast answers. For deeper details, follow the linked guide or reference page in each answer.
+
+## Getting started
+
+### What is the CoinMarketCap API for?
+
+It provides live and historical cryptocurrency market data, exchange data, DEX data, and broader market signals for apps, dashboards, analytics, and research workflows. Start with the [API Overview](https://pro.coinmarketcap.com/api/documentation) if you want the fastest orientation.
+
+### How do I get an API key?
+
+Sign up at [pro.coinmarketcap.com](https://pro.coinmarketcap.com/signup). Your API key is available in the Developer Portal dashboard. Then use the [Quick Start](https://pro.coinmarketcap.com/api/documentation/guides/quick-start).
+
+### Should I start with production or sandbox?
+
+Start with production first so you can see the normal authentication flow and real response shape. Use sandbox only if you want to validate request structure with mock data. See [Quick Start](https://pro.coinmarketcap.com/api/documentation/guides/quick-start).
+
+## Choosing data and endpoints
+
+### Should I use quotes or listings?
+
+Use `quotes` when you already know the assets you care about. Use `listings` when you want a ranked or filtered list across the market. Start with [Choose an Endpoint](https://pro.coinmarketcap.com/api/documentation/pro-api-reference/endpoint-overview).
+
+### Should I use id or symbol?
+
+Use CoinMarketCap `id` whenever possible. It is more stable than `symbol`, which can be ambiguous or change over time. See [API response format, IDs, and timestamps](https://pro.coinmarketcap.com/api/documentation/guides/standards-and-conventions).
+
+### What cryptocurrencies and exchanges are available?
+
+You can discover supported assets and exchanges using `/v1/cryptocurrency/map` and `/v1/exchange/map`. Those endpoints are the best place to start when building stable lookups and mappings.
+
+### How far back does historical data go?
+
+Historical coverage varies by asset and exchange. Use `/v1/cryptocurrency/map` or `/v1/exchange/map`; each result includes `first_historical_data` so you can check the available start date directly.
+
+### Do you support pricing in local currencies?
+
+Yes. The API supports fiat currency conversion and precious metals. Use `/v1/fiat/map` for the supported fiat currency list, and check the endpoint parameter documentation for supported precious metal conversions such as `XAU`, `XAG`, `XPT`, and `XPD`.
+
+## Usage and limits
+
+### How do API call credits work?
+
+Credits are tied to data returned, not just raw request count. For the full model, including bundling and paginated responses, see [Authentication](https://pro.coinmarketcap.com/api/documentation/guides/authentication).
+
+### What happens when I hit a rate limit?
+
+The API returns HTTP 429. Rate limits reset every 60 seconds, and the exact limits depend on your tier. See [Rate limits, errors, and troubleshooting](https://pro.coinmarketcap.com/api/documentation/guides/errors-and-rate-limits).
+
+### Do you have a free tier?
+
+Yes. The `Basic` tier is the simplest way to evaluate the API. If you need more capacity, see the [pricing page](https://coinmarketcap.com/api/pricing/).
+
+## Troubleshooting
+
+### Can I call the API directly from the browser?
+
+No. Client-side browser requests are blocked to protect your API key. Route requests through your own backend or another trusted server-side environment. See [Quick Start](https://pro.coinmarketcap.com/api/documentation/guides/quick-start).
+
+### How do I identify a cryptocurrency correctly?
+
+Use the numeric CoinMarketCap `id` if you can. Symbols are convenient, but they are not always unique. Use `/v1/cryptocurrency/map` to look up the correct ID.
+
+### Where can I check API status?
+
+Use the [public API health dashboard](https://status.coinmarketcap.com/).
+
+### Where should I go after my first successful call?
+
+Use [Common Workflows](https://pro.coinmarketcap.com/api/documentation/guides/common-workflows) if you want to start from a task, or [Choose an Endpoint](https://pro.coinmarketcap.com/api/documentation/pro-api-reference/endpoint-overview) if you want to browse the API surface directly.
+
+---
+
+For more questions, visit the full [CoinMarketCap API FAQ](https://coinmarketcap.com/api/faq/) or [contact support](https://support.coinmarketcap.com/hc/en-us/requests/new?ticket_form_id=360001156492).
+
+---
+
+## Document: Which CoinMarketCap API Endpoint Should I Use?
+
+Choose the right CoinMarketCap REST API family for prices, historical data, exchanges, DEX data, and market signals.
+
+URL: https://pro.coinmarketcap.com/api/documentation/pro-api-reference/endpoint-overview
+
+# Which CoinMarketCap API Endpoint Should I Use?
+
+> For the complete CoinMarketCap API documentation index, see [llms.txt](https://pro.coinmarketcap.com/llms.txt). For a single-file dump of all documentation, see [llms-full.txt](https://pro.coinmarketcap.com/llms-full.txt).
+
+Use this page when you know what you want to build, but you are not yet sure which part of the API to start with. The task chooser below points you to the right API family first. The full category tables remain below if you prefer to browse the API by section.
+
+## Start with your goal
+
+| If you want to... | Start here | Typical endpoint patterns |
+|---|---|---|
+| Get the latest prices for assets you already know | [Cryptocurrency](https://pro.coinmarketcap.com/api/documentation/pro-api-reference/cryptocurrency) | `quotes/latest`, `price-performance-stats/latest` |
+| Get a ranked list of top assets by market cap | [Cryptocurrency](https://pro.coinmarketcap.com/api/documentation/pro-api-reference/cryptocurrency) | `listings/latest`, `trending/*` |
+| Fetch historical prices or candlestick data | [Cryptocurrency](https://pro.coinmarketcap.com/api/documentation/pro-api-reference/cryptocurrency) and [OHLCV](https://pro.coinmarketcap.com/api/documentation/pro-api-reference/ohlcv) | `quotes/historical`, `ohlcv/historical` |
+| Look up metadata, IDs, logos, or mappings | [Cryptocurrency](https://pro.coinmarketcap.com/api/documentation/pro-api-reference/cryptocurrency), [Exchange](https://pro.coinmarketcap.com/api/documentation/pro-api-reference/exchange), and [Tools](https://pro.coinmarketcap.com/api/documentation/pro-api-reference/tools) | `info`, `map`, `price-conversion` |
+| Analyze centralized exchanges and market pairs | [Exchange](https://pro.coinmarketcap.com/api/documentation/pro-api-reference/exchange) | `info`, `listings/latest`, `market-pairs/latest`, `assets` |
+| Work with DEX tokens, pairs, and on-chain trading activity | [Token](https://pro.coinmarketcap.com/api/documentation/pro-api-reference/token), [Platform](https://pro.coinmarketcap.com/api/documentation/pro-api-reference/platform), and [OHLCV](https://pro.coinmarketcap.com/api/documentation/pro-api-reference/ohlcv) | token lookup, pair quotes, pool/liquidity data, OHLCV |
+| Understand the broader market and sentiment | [Global Metrics](https://pro.coinmarketcap.com/api/documentation/pro-api-reference/global-metrics), [CMC Index](https://pro.coinmarketcap.com/api/documentation/pro-api-reference/cmc-index), [Content](https://pro.coinmarketcap.com/api/documentation/pro-api-reference/content), and [Community](https://pro.coinmarketcap.com/api/documentation/pro-api-reference/community) | market cap, dominance, indices, headlines, trending topics |
+| Convert prices or export a Postman helper | [Tools](https://pro.coinmarketcap.com/api/documentation/pro-api-reference/tools) | `price-conversion`, `postman` |
+
+## Quick rules that save time
+
+- Use `listings` endpoints when you want sorted, paginated lists.
+- Use `quotes`, `info`, and `market-pairs` endpoints when you already know which assets or exchanges you care about.
+- Use `*/latest` for current market data and `*/historical` for time-series data.
+- Use `*/info` for descriptive metadata and `*/map` for stable identifiers.
+- Use CoinMarketCap IDs when possible; they are more stable than symbols.
+- Use the guides for [authentication](https://pro.coinmarketcap.com/api/documentation/guides/authentication), [response format and IDs](https://pro.coinmarketcap.com/api/documentation/guides/standards-and-conventions), and [rate limits and troubleshooting](https://pro.coinmarketcap.com/api/documentation/guides/errors-and-rate-limits).
+
+---
+
+## Browse all API families
+
+The CoinMarketCap API reference is organized into four groups: market data, DEX data, utilities, and legacy endpoints.
+
+### Market Data
+
+Core centralized market data for cryptocurrency prices, exchange volumes, global metrics, news, and community trends.
+
+| Category | Use it for |
+|---|---|
+| [Cryptocurrency](https://pro.coinmarketcap.com/api/documentation/pro-api-reference/cryptocurrency) | Quotes, listings, OHLCV, market pairs, trending, categories, airdrops, and price performance stats. |
+| [Exchange](https://pro.coinmarketcap.com/api/documentation/pro-api-reference/exchange) | Exchange metadata, rankings, volume quotes, market pairs, and proof-of-reserves assets. |
+| [Global Metrics](https://pro.coinmarketcap.com/api/documentation/pro-api-reference/global-metrics) | Aggregate market cap, BTC/ETH dominance, total market volume, and historical market-wide views. |
+| [Content](https://pro.coinmarketcap.com/api/documentation/pro-api-reference/content) | News headlines, Alexandria content, community posts, and post comments. |
+| [Community](https://pro.coinmarketcap.com/api/documentation/pro-api-reference/community) | Trending topics and trending tokens driven by community activity. |
+| [CMC Index](https://pro.coinmarketcap.com/api/documentation/pro-api-reference/cmc-index) | CoinMarketCap indices such as CMC 100 and CMC 20. |
+
+---
+
+### DEX Data
+
+On-chain DEX trading data across hundreds of decentralized exchanges on Ethereum, Solana, BNB Chain, and more.
+
+| Category | Use it for |
+|---|---|
+| [Token](https://pro.coinmarketcap.com/api/documentation/pro-api-reference/token) | Token lookup, batch queries, price, liquidity, pools, transactions, trending lists, new tokens, meme tokens, gainers/losers, and security analysis. |
+| [Platform](https://pro.coinmarketcap.com/api/documentation/pro-api-reference/platform) | Supported blockchain networks and DEX platform details. |
+| [Holder](https://pro.coinmarketcap.com/api/documentation/pro-api-reference/holder) | Token holder analytics and distribution data. |
+| [OHLCV](https://pro.coinmarketcap.com/api/documentation/pro-api-reference/ohlcv) | Candlestick data and OHLCV price history for DEX pairs. |
+| [Others](https://pro.coinmarketcap.com/api/documentation/pro-api-reference/others) | Additional DEX endpoints including trade data and blockchain statistics. |
+
+---
+
+### Utilities
+
+| Category | Use it for |
+|---|---|
+| [Tools](https://pro.coinmarketcap.com/api/documentation/pro-api-reference/tools) | Fiat ID maps, API key usage info, price conversion, and Postman collection export. |
+
+---
+
+### Legacy
+
+| Category | Description |
+|---|---|
+| [Deprecated](https://pro.coinmarketcap.com/api/documentation/pro-api-reference/deprecated) | Legacy endpoints retained for backward compatibility. Many have newer V2/V3 replacements, while others remain archived legacy surfaces. |
+
