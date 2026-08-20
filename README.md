@@ -1,6 +1,6 @@
 # Crypto Claude Skills
 
-> Production-ready [Claude Code](https://claude.com/claude-code) skills for on-chain data APIs — Dune Analytics, Solscan Pro, Nansen, and universal Solana RPC (Helius / QuickNode / any provider).
+> Production-ready AI-agent skills for on-chain and crypto-market data — Dune, Solscan, Nansen, Solana RPC, pump.fun, DexScreener, MEV bundles, and CoinMarketCap.
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Skills: 8](https://img.shields.io/badge/skills-8-blue.svg)](#skills)
@@ -139,11 +139,15 @@ crypto-claude-skills/
 │   ├── solscan/
 │   ├── nansen/               ← includes llms-full.txt (official LLM-ready docs)
 │   └── quicknode/            ← Solana RPC + Helius llms.txt
-└── skills/                   ← four Claude Code skills (copy to ~/.claude/skills/)
+└── skills/                   ← eight AI-agent skills (copy to ~/.claude/skills/)
     ├── dune/
     ├── solscan/
     ├── nansen/
-    └── solana-rpc/
+    ├── solana-rpc/
+    ├── pumpfun/
+    ├── dexscreener/
+    ├── mev-bundles/
+    └── coinmarketcap/
 ```
 
 ---

@@ -4,7 +4,7 @@
 # Usage:
 #   ./scripts/sync-to-standalone.sh <skill>            # sync + commit + push
 #   ./scripts/sync-to-standalone.sh <skill> --init     # first-time: create github repo too
-#   ./scripts/sync-to-standalone.sh --all [--init]     # sync all four skills
+#   ./scripts/sync-to-standalone.sh --all [--init]     # sync all eight skills
 #
 # Layout:
 #   Umbrella lives in: <repo-root> (the dir containing this script's parent)
@@ -225,7 +225,7 @@ python references/examples/<example>.py --help
 
 ## Part of [\`crypto-claude-skills\`](https://github.com/$GITHUB_USER/crypto-claude-skills)
 
-This skill is also included in the umbrella [\`crypto-claude-skills\`](https://github.com/$GITHUB_USER/crypto-claude-skills) collection alongside \`dune-skill\`, \`solscan-skill\`, \`nansen-skill\`, and \`solana-rpc-skill\`.
+This skill is also included in the umbrella [\`crypto-claude-skills\`](https://github.com/$GITHUB_USER/crypto-claude-skills) collection alongside the other on-chain and crypto-market data skills listed there.
 EOF
 
   write_env_example "$skill" "$target"
@@ -251,7 +251,7 @@ See \`README.md\` and \`INSTALL.md\`. For Python examples: \`pip install aiohttp
 
 ## Part of a collection
 
-This skill is one of four — see umbrella at https://github.com/$GITHUB_USER/crypto-claude-skills.
+This skill is one of eight — see umbrella at https://github.com/$GITHUB_USER/crypto-claude-skills.
 
 ## License
 
