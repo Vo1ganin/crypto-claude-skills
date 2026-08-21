@@ -139,7 +139,7 @@ Standard JSON-RPC supports arrays — send multiple method calls in ONE HTTP req
 
 Returns array of responses. Typical max 100 per batch. **Always use batching for multi-item fetches** — same credit count (provider-dependent), vastly less HTTP overhead.
 
-## Historical from memory (copytrade project)
+## Historical empirical notes
 
 - `getTransaction` on QuickNode: ~10k req/min, ~15KB response per tx, jsonParsed works well
 - `getBlock` on QuickNode: requires ~30s timeout due to full payload

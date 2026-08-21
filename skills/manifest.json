@@ -1,0 +1,81 @@
+{
+  "schema_version": 1,
+  "collection_version": "0.2.0",
+  "canonical_repository": "https://github.com/Vo1ganin/crypto-claude-skills",
+  "skills": [
+    {
+      "id": "dune",
+      "display_name": "Dune Analytics",
+      "mirror_repo": "dune-skill",
+      "docs_dir": "dune",
+      "description": "AI-agent skill and DuneSQL examples for cost-aware blockchain analytics with the Dune API.",
+      "topics": ["dune-analytics", "dunesql", "blockchain-analytics", "sql", "api-integration", "agent-skills"],
+      "environment": ["DUNE_API_KEY_FREE=", "# DUNE_API_KEY_FREE_2=", "# DUNE_API_KEY_PAID="]
+    },
+    {
+      "id": "solscan",
+      "display_name": "Solscan Pro",
+      "mirror_repo": "solscan-skill",
+      "docs_dir": "solscan",
+      "description": "AI-agent skill and Python examples for batched Solscan Pro v2 analytics with credit controls.",
+      "topics": ["solscan", "solana", "blockchain-data", "api-integration", "python", "agent-skills"],
+      "environment": ["SOLSCAN_API_KEY="]
+    },
+    {
+      "id": "nansen",
+      "display_name": "Nansen",
+      "mirror_repo": "nansen-skill",
+      "docs_dir": "nansen",
+      "description": "AI-agent skill for cross-chain wallet and Smart Money analytics with cost and credential safeguards.",
+      "topics": ["nansen", "wallet-analytics", "onchain-analytics", "blockchain-data", "api-integration", "agent-skills"],
+      "environment": ["NANSEN_API_KEY=", "# NANSEN_API_KEY_2="]
+    },
+    {
+      "id": "solana-rpc",
+      "display_name": "Solana JSON-RPC",
+      "mirror_repo": "solana-rpc-skill",
+      "docs_dir": "quicknode",
+      "description": "Provider-neutral Solana JSON-RPC skill and Python examples for batching, transaction retrieval, and enhanced APIs.",
+      "topics": ["solana", "solana-rpc", "json-rpc", "helius", "quicknode", "python", "agent-skills"],
+      "environment": ["SOLANA_RPC_URL=", "# SOLANA_RPC_URL_FALLBACK="]
+    },
+    {
+      "id": "pumpfun",
+      "display_name": "pump.fun Data Research",
+      "mirror_repo": "pumpfun-skill",
+      "docs_dir": "pumpfun",
+      "description": "Research-oriented AI-agent skill for pump.fun data, bonding-curve analysis, and real-time event monitoring.",
+      "topics": ["pumpfun", "solana", "bonding-curve", "event-streaming", "onchain-data", "agent-skills"],
+      "environment": ["SOLANA_RPC_URL=", "# SOLANA_KEYPAIR_PATH="],
+      "visibility": "private_until_safety_review"
+    },
+    {
+      "id": "dexscreener",
+      "display_name": "DexScreener",
+      "mirror_repo": "dexscreener-skill",
+      "docs_dir": "dexscreener",
+      "description": "AI-agent skill and Python examples for pair discovery, pricing, and liquidity monitoring with the public DexScreener API.",
+      "topics": ["dexscreener", "dex", "market-data", "liquidity", "api-integration", "agent-skills"],
+      "environment": []
+    },
+    {
+      "id": "mev-bundles",
+      "display_name": "Solana MEV Pattern Research",
+      "mirror_repo": "mev-bundles-skill",
+      "docs_dir": "mev-bundles",
+      "description": "Research-oriented skill for identifying and analyzing Solana transaction bundles, relay tips, and MEV patterns.",
+      "topics": ["solana", "mev", "transaction-analysis", "jito", "onchain-analysis", "agent-skills"],
+      "environment": ["SOLANA_RPC_URL=", "# JITO_AUTH_UUID="],
+      "visibility": "private_until_safety_review"
+    },
+    {
+      "id": "coinmarketcap",
+      "display_name": "CoinMarketCap",
+      "mirror_repo": "coinmarketcap-skill",
+      "docs_dir": "coinmarketcap",
+      "description": "AI-agent skill and Python examples for batched CoinMarketCap market-data API workflows.",
+      "topics": ["coinmarketcap", "market-data", "crypto-api", "ohlcv", "python", "agent-skills"],
+      "environment": ["CMC_API_KEY=", "# CMC_API_KEY_2="]
+    }
+  ]
+}

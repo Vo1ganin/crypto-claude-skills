@@ -1,235 +1,85 @@
-# Jito Block Engine — Full API
+# Jito public data for bundle research
 
-## Regional endpoints (pick closest to your server)
+This reference covers public Jito concepts and data useful for read-only research. It intentionally omits transaction-submission payloads, live fee-setting recommendations, low-latency optimization, and multi-region execution guidance.
 
-| Region | URL |
-|--------|-----|
-| Global (auto-route) | `https://mainnet.block-engine.jito.wtf` |
-| Amsterdam | `https://amsterdam.mainnet.block-engine.jito.wtf` |
-| Dublin | `https://dublin.mainnet.block-engine.jito.wtf` |
-| Frankfurt | `https://frankfurt.mainnet.block-engine.jito.wtf` |
-| London | `https://london.mainnet.block-engine.jito.wtf` |
-| New York | `https://ny.mainnet.block-engine.jito.wtf` |
-| Salt Lake City | `https://slc.mainnet.block-engine.jito.wtf` |
-| Singapore | `https://singapore.mainnet.block-engine.jito.wtf` |
-| Tokyo | `https://tokyo.mainnet.block-engine.jito.wtf` |
-| Testnet (global) | `https://testnet.block-engine.jito.wtf` |
-| Testnet Dallas | `https://dallas.testnet.block-engine.jito.wtf` |
-| Testnet NY | `https://ny.testnet.block-engine.jito.wtf` |
+## Research concepts
 
-Each region includes Shred Receiver + NTP Server sub-infrastructure. Region-pick saves 10-100ms RTT.
+### Bundle
 
-## Auth
+An ordered group of transactions handled through a block-engine flow. Public visibility may be incomplete, especially for failed/private submissions.
 
-**Free tier:** 1 request per second per IP per region. No authentication required.
+### Relay tip
 
-**Higher limits:** Request a UUID via Jito Discord. Pass as:
-- Header: `x-jito-auth: <uuid>`
-- Or query string: `?uuid=<uuid>`
+A transfer to a published tip account. It is an observable fee signal, not proof of intent, strategy, malicious behavior, bundle membership, or successful landing.
 
-## Endpoints
+### Bundle status
 
-### 1. `sendTransaction` — single tx with MEV protection
+Public/provider data may expose statuses such as pending, failed, landed, confirmed, or finalized. Exact schemas and retention windows change; verify current official documentation.
 
-```
-POST https://{region}.mainnet.block-engine.jito.wtf/api/v1/transactions
-Content-Type: application/json
-```
+## Public research sources
 
-**Request:**
-```json
-{
-  "id": 1,
-  "jsonrpc": "2.0",
-  "method": "sendTransaction",
-  "params": [
-    "<base64 signed tx>",
-    {"encoding": "base64"}
-  ]
-}
-```
+- Jito documentation: bundle concepts, status terminology, public tip accounts
+- Jito public tip-floor distribution
+- Jito explorer for public bundle/signature lookup
+- Dune or Bitquery indexed historical tables where available
+- Solana RPC block and transaction data
 
-**Response:**
-```json
-{"jsonrpc": "2.0", "result": "<signature>", "id": 1}
-```
+Record the source, access time, region/provider context where relevant, and known retention/coverage limits.
 
-Also the response has HTTP header:
-```
-x-bundle-id: <bundle_id_for_tracking>
-```
+## Tip-floor distribution
 
-Recommended split: 70% priority fee, 30% Jito tip. Tip goes as a SOL transfer instruction inside the same tx.
+The public tip-floor endpoint reports a historical distribution of landed tips. Values are SOL-denominated decimals in the currently observed schema; validate the schema before conversion.
 
-### 2. `sendBundle` — atomic bundle up to 5 txs
+Use it to:
 
-```
-POST https://{region}.mainnet.block-engine.jito.wtf/api/v1/bundles
-Content-Type: application/json
-```
+- describe same-period fee distributions;
+- compare bounded cohorts;
+- monitor changes over time;
+- document congestion context.
 
-**Request:**
-```json
-{
-  "jsonrpc": "2.0",
-  "id": 1,
-  "method": "sendBundle",
-  "params": [
-    ["<base64 tx1>", "<base64 tx2>", "...", "<base64 tx5>"],
-    {"encoding": "base64"}
-  ]
-}
-```
+Do not treat a percentile as an automatic live recommendation.
 
-**Response:**
-```json
-{"jsonrpc": "2.0", "result": "<bundle_id>", "id": 1}
-```
+The read-only example `references/examples/tip_floor_snapshot.py` normalizes the public response into both SOL and lamports and states its descriptive limitation.
 
-**Key properties:**
-- All txs execute sequentially in same block (or none do — atomic)
-- Tip transfer should be in the last tx, to one of the 8 tip accounts
-- No priority fee split required — only tip matters for bundles
-- Auction frequency: every 50ms inside the block engine
+## Tip-account matching
 
-### 3. `getBundleStatuses` — historical status
+A versioned list of documented public tip accounts can support descriptive matching. Requirements:
 
-```
-POST https://{region}.mainnet.block-engine.jito.wtf/api/v1/getBundleStatuses
-```
+1. Record the account-list source and verification date.
+2. Sum all matching transfer instructions in a transaction.
+3. Track unparsed/missing transactions separately.
+4. Do not infer intent or bundle membership from the transfer alone.
+5. Prefer an authoritative bundle identifier when available.
 
-**Request:**
-```json
-{
-  "jsonrpc": "2.0",
-  "id": 1,
-  "method": "getBundleStatuses",
-  "params": [["<bundle_id_1>", "<bundle_id_2>"]]
-}
-```
-Max 5 bundle IDs per request.
+## Bundle-status research
 
-**Response:**
-```json
-{
-  "result": {
-    "context": {"slot": 242806119},
-    "value": [
-      {
-        "bundle_id": "...",
-        "transactions": ["<sig1>", "<sig2>"],
-        "slot": 242804011,
-        "confirmation_status": "finalized",
-        "err": {"Ok": null}
-      }
-    ]
-  }
-}
-```
+When analyzing a known public bundle identifier:
 
-`confirmation_status`: `processed` | `confirmed` | `finalized`.
+- preserve the identifier and source;
+- record transaction signatures and reported slot/status;
+- distinguish provider status from chain confirmation;
+- handle missing/expired status data explicitly;
+- avoid treating absence from one endpoint as proof the bundle never existed.
 
-### 4. `getInflightBundleStatuses` — real-time (last 5 min)
+## Rate and freshness limits
 
-```
-POST https://{region}.mainnet.block-engine.jito.wtf/api/v1/getInflightBundleStatuses
-```
+Public endpoints can be rate-limited and can change without notice. Use bounded requests, backoff on 429/5xx, cache research snapshots with access time, and avoid high-frequency polling unless explicitly permitted.
 
-**Request:** same shape as `getBundleStatuses`.
+## Safety boundary
 
-**Response:**
-```json
-{
-  "result": {
-    "value": [
-      {
-        "bundle_id": "...",
-        "status": "Landed",
-        "landed_slot": 280998500
-      }
-    ]
-  }
-}
-```
+This research skill does not:
 
-**Status values:**
-| Status | Meaning |
-|--------|---------|
-| `Invalid` | Rejected (bad signature, format, etc.) |
-| `Pending` | Accepted, awaiting Jito leader slot |
-| `Failed` | Landed but reverted, or expired |
-| `Landed` | Included on-chain at `landed_slot` |
+- construct, sign, submit, retry, or fee-bump transactions;
+- recommend a live fee/tip amount;
+- optimize region/latency for execution;
+- provide multi-relay submission code;
+- accept signed payloads or signer material.
 
-Bundles older than 5 min → 500 error; use `getBundleStatuses` instead.
+Any future execution workflow requires separate safety review, dry-run, deterministic limits, full transaction preview, and explicit per-action approval.
 
-### 5. `getTipAccounts` — list the 8 tip destinations
+## Sources
 
-```
-POST https://{region}.mainnet.block-engine.jito.wtf/api/v1/getTipAccounts
-```
-
-Returns:
-```json
-{
-  "result": [
-    "96gYZGLnJYVFmbjzopPSU6QiEV5fGqZNyN9nmNhvrZU5",
-    "HFqU5x63VTqvQss8hp11i4wVV8bD44PvwucfZ2bU7gRe",
-    "Cw8CFyM9FkoMi7K7Crf6HNQqf4uEMzpKw6QNghXLvLkY",
-    "ADaUMid9yfUytqMBgopwjb2DTLSokTSzL1zt6iGPaS49",
-    "DfXygSm4jCyNCybVYYK6DwvWqjKee8pbDmJGcLWNDXjh",
-    "ADuUkR4vqLUMWXxW9gh6D6L8pMSawimctcNZ5pGwDcEt",
-    "DttWaMuVvTiduZRnguLF7jNxTgiMBZ1hyAumKUiL2KRL",
-    "3AVi9Tg9Uo68tJfuvoKvqKNWKkC5wPdSSdeBnizKZ6jT"
-  ]
-}
-```
-
-Hardcoding these is fine (they're stable) but calling the endpoint is future-proof.
-
-## Tip pricing data APIs
-
-### Tip-floor REST (current percentiles)
-```
-GET https://bundles.jito.wtf/api/v1/bundles/tip_floor
-```
-
-Returns live percentiles (25th, 50th, 75th, 95th, 99th) of **landed** bundle tips.
-
-### Tip-floor WebSocket stream
-```
-wss://bundles.jito.wtf/api/v1/bundles/tip_stream
-```
-
-Subscribes to live updates. Useful for bots that adjust tips dynamically.
-
-## Rate limits
-
-| Tier | Limit |
-|------|-------|
-| Free | 1 req/sec per IP per region |
-| Authed | Higher — request UUID via Discord |
-
-**Trick:** each region has its own rate limit. If you run a multi-region bot, you can parallel-submit across 2-3 regions legitimately.
-
-429 on exceed → back off. No `Retry-After` header typically.
-
-## Common errors
-
-| Error | Cause |
-|-------|-------|
-| `-32600` invalid request | Malformed JSON-RPC |
-| `-32603` internal | Jito-side issue; retry different region |
-| HTTP 429 | Rate limit exceeded |
-| Bundle `Invalid` status | Bad signature, stale blockhash, or format error — rebuild and resend |
-| Bundle `Failed` after landing | Tx reverted on-chain — check via `getTransaction` for the err |
-
-## Reference searcher implementations
-
-Official Jito searcher examples: https://github.com/jito-labs/searcher-examples
-
-Language-specific:
-- Rust (recommended for searchers): jito-labs/searcher-examples/tree/main/rust
-- TypeScript: jito-labs/searcher-examples/tree/main/typescript
-- Python: community-maintained; see jito-py on PyPI
-
-For most trading bots, our Python examples in `examples/` are sufficient.
+- https://docs.jito.wtf/lowlatencytxnsend/
+- https://jito-foundation.gitbook.io/mev/mev-payment-and-distribution/on-chain-addresses
+- https://explorer.jito.wtf/
+- https://bundles.jito.wtf/api/v1/bundles/tip_floor

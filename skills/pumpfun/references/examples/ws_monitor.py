@@ -6,7 +6,7 @@ reconnecting and re-sending saved subscriptions.
 
 Usage:
     python ws_monitor.py              # stream everything new
-    python ws_monitor.py --wallet WALLET1 --wallet WALLET2   # copytrade watch
+    python ws_monitor.py --wallet WALLET1 --wallet WALLET2   # account-activity watch
     python ws_monitor.py --mint MINT1                        # token watch
     python ws_monitor.py --migration                         # migrations only
 
