@@ -384,7 +384,7 @@ class MirrorBuilderTest(unittest.TestCase):
             self.assertEqual(broken, [])
 
     def test_builder_materializes_indexed_bytes_not_symlinked_parent_content(self):
-        with tempfile.TemporaryDirectory() as tmp:
+        with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as tmp:
             temp = Path(tmp)
             repo = temp / "repo"
             shutil.copytree(
@@ -419,7 +419,7 @@ class MirrorBuilderTest(unittest.TestCase):
             self.assertNotIn("EXTERNAL_CANARY", generated.read_text())
 
     def test_builder_reads_manifest_from_index_not_symlinked_worktree(self):
-        with tempfile.TemporaryDirectory() as tmp:
+        with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as tmp:
             temp = Path(tmp)
             repo = temp / "repo"
             shutil.copytree(
