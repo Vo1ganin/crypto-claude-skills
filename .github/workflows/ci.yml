@@ -1,0 +1,38 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Unit tests
+        run: python -m unittest tests/test_mirror_builder.py -v
+      - name: Build deterministic mirrors
+        run: python scripts/build_mirror.py --all --output /tmp/crypto-skill-mirrors
+      - name: Compile Python examples
+        run: python -m compileall -q scripts skills
+      - name: Validate manifest JSON
+        run: python -m json.tool skills/manifest.json >/dev/null
+      - name: Whitespace and patch safety
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
+            git fetch origin "${{ github.base_ref }}"
+            git diff --check "origin/${{ github.base_ref }}...HEAD"
+          else
+            git show --check --format= HEAD
+          fi

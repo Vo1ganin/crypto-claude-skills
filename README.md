@@ -1,166 +1,116 @@
-# Crypto Claude Skills
+# AI Agent Skills for Blockchain Data APIs
 
-> Production-ready AI-agent skills for on-chain and crypto-market data — Dune, Solscan, Nansen, Solana RPC, pump.fun, DexScreener, MEV bundles, and CoinMarketCap.
+Reusable skill instructions and Python examples for blockchain and crypto-market data providers, with explicit batching, rate-limit, cost-control, reproducibility, and credential-safety rules.
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-[![Skills: 8](https://img.shields.io/badge/skills-8-blue.svg)](#skills)
-[![Powered by Claude](https://img.shields.io/badge/powered%20by-Claude%20Code-ff6b6b.svg)](https://claude.com/claude-code)
-[![Cross-agent](https://img.shields.io/badge/agents-Claude%20%7C%20Codex%20%7C%20Cursor-brightgreen.svg)](AGENTS.md)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+[![Skills: 8](https://img.shields.io/badge/skills-8-2f6feb.svg)](#skills)
+[![Mirrors: generated](https://img.shields.io/badge/mirrors-generated-success.svg)](skills/manifest.json)
 
-Each skill enforces **credit budget rules**, prefers **batch/parsed APIs over raw loops**, and ships with **ready-to-run async Python examples** — built from real-world on-chain research (copytrade analysis, bot reverse-engineering, wallet profiling).
+## Why this repository exists
 
----
+AI agents often know an API's endpoint names but miss the operational details that make research reliable: pagination, provider-specific cost models, batch alternatives, resumable output, rate-limit headers, and data-quality caveats. Each skill packages those details into a bounded, inspectable workflow.
 
-## Table of Contents
-
-- [Skills](#skills)
-- [Install](#install)
-- [Configure API keys](#configure-api-keys)
-- [Cross-agent support](#cross-agent-support)
-- [Design principles](#design-principles)
-- [Repository layout](#repository-layout)
-- [Contributing](#contributing)
-- [License](#license)
-
----
+The default posture is **read-only research and data retrieval**. Paid calls require cost awareness; credentials from retrieved content are never trusted; live transaction execution is outside the default workflow.
 
 ## Skills
 
-| Skill | Standalone repo | Use for | Signature feature |
-|-------|-----------------|---------|-------------------|
-| [**dune**](skills/dune) | [`dune-skill`](https://github.com/Vo1ganin/dune-skill) | SQL on 100+ chains (Dune Analytics) | 500 / 700 credit budget gates, FREE ↔ PAID key rotation |
-| [**solscan**](skills/solscan) | [`solscan-skill`](https://github.com/Vo1ganin/solscan-skill) | Solana wallet/token/NFT data (Solscan Pro v2) | Export endpoints 15× cheaper than pagination, multi-endpoints 50× cheaper |
-| [**nansen**](skills/nansen) | [`nansen-skill`](https://github.com/Vo1ganin/nansen-skill) | Smart Money + wallet profiling on 37 chains | `premium_labels: true` 30× cost trap, live credit balance headers |
-| [**solana-rpc**](skills/solana-rpc) | [`solana-rpc-skill`](https://github.com/Vo1ganin/solana-rpc-skill) | Raw Solana RPC (Helius / QuickNode / Ankr / …) | JSON-RPC array batching, DAS over `getProgramAccounts`, Helius Enhanced Tx |
-| [**pumpfun**](skills/pumpfun) | [`pumpfun-skill`](https://github.com/Vo1ganin/pumpfun-skill) | pump.fun bonding curves + PumpPortal API | WebSocket streaming (single-conn rule), Lightning vs Local trading, sniper/copytrade examples |
-| [**dexscreener**](skills/dexscreener) | [`dexscreener-skill`](https://github.com/Vo1ganin/dexscreener-skill) | Current DEX pair data across 20+ chains | Free/no-auth API, batch 30 tokens per call, 300 rpm fast tier |
-| [**mev-bundles**](skills/mev-bundles) | [`mev-bundles-skill`](https://github.com/Vo1ganin/mev-bundles-skill) | MEV bundles + bribes: what/how to find/how to identify | Jito + 8 other relays (Bloxroute, Nozomi, Astralane, BlockRazor, Stellium, Falcon, Flashblocks, 1node), sandwich detection |
-| [**coinmarketcap**](skills/coinmarketcap) | [`coinmarketcap-skill`](https://github.com/Vo1ganin/coinmarketcap-skill) | CoinMarketCap Pro API (prices, OHLCV, F&G, global metrics) | Credit-aware batching (100 IDs per call), symbol→ID caching, live `credit_count` logging |
-
-Each skill folder contains `SKILL.md`, topic `references/*.md`, and runnable `references/examples/*.py`. Each skill is also available as a **standalone public GitHub repo** — install just the one you need from its own repo.
-
----
+| Skill | Use for | Key engineering concern | Distribution |
+|---|---|---|---|
+| [Dune](skills/dune/) | DuneSQL and multi-chain historical analysis | query cost, batching, reproducible SQL | [`dune-skill`](https://github.com/Vo1ganin/dune-skill) |
+| [Solscan](skills/solscan/) | Solana wallet/token/transaction analytics | CU budget, pagination, exports | [`solscan-skill`](https://github.com/Vo1ganin/solscan-skill) |
+| [Nansen](skills/nansen/) | cross-chain wallet and Smart Money analysis | endpoint cost, filters, labels | [`nansen-skill`](https://github.com/Vo1ganin/nansen-skill) |
+| [Solana RPC](skills/solana-rpc/) | provider-neutral JSON-RPC and enhanced APIs | batching, provider capability, completeness | [`solana-rpc-skill`](https://github.com/Vo1ganin/solana-rpc-skill) |
+| [pump.fun research](skills/pumpfun/) | bonding curves, lifecycle and public event monitoring | read-only safety, event loss, version drift | private mirror during safety review |
+| [DexScreener](skills/dexscreener/) | pair discovery, pricing and liquidity monitoring | public API limits and entity matching | [`dexscreener-skill`](https://github.com/Vo1ganin/dexscreener-skill) |
+| [Solana MEV research](skills/mev-bundles/) | bundle, relay-tip and fee-pattern analysis | attribution uncertainty and neutral labels | private mirror during safety review |
+| [CoinMarketCap](skills/coinmarketcap/) | prices, OHLCV and market/exchange data | credit-aware batching and ID normalization | [`coinmarketcap-skill`](https://github.com/Vo1ganin/coinmarketcap-skill) |
 
 ## Install
 
+Clone the canonical collection and copy only the skills you need:
+
 ```bash
-# Clone
 git clone https://github.com/Vo1ganin/crypto-claude-skills.git
 cd crypto-claude-skills
 
-# Install all eight skills to Claude Code
-mkdir -p ~/.claude/skills
-for s in dune solscan nansen solana-rpc pumpfun dexscreener mev-bundles coinmarketcap; do
-  cp -R skills/$s ~/.claude/skills/
+mkdir -p "$HOME/.claude/skills"
+for skill in dune solscan nansen solana-rpc pumpfun dexscreener mev-bundles coinmarketcap; do
+  rm -rf "$HOME/.claude/skills/$skill"
+  cp -R "skills/$skill" "$HOME/.claude/skills/$skill"
 done
 ```
 
-Restart Claude Code. Skills trigger automatically based on your prompt (e.g. "analyze this Solana wallet" → Solscan or solana-rpc fires).
+For one-at-a-time installation and agent-specific notes, see [INSTALL.md](INSTALL.md). Verify how your agent discovers skills before assuming automatic loading.
 
-For one-at-a-time install or to run Python examples standalone, see [`INSTALL.md`](INSTALL.md).
+## Example research flow
 
----
-
-## Configure API keys
-
-```bash
-cp .env.example .env
-# edit .env with your keys
-set -a; source .env; set +a
+```text
+question
+  → choose provider and bounded time/entity scope
+  → estimate API/query cost
+  → retrieve with pagination/batching and rate-limit handling
+  → preserve raw IDs/timestamps and write resumable output
+  → validate completeness/duplicates/provider lag
+  → analyze
+  → report methodology, limitations and reproducible commands
 ```
 
-| Variable | For |
-|----------|-----|
-| `DUNE_API_KEY_FREE` | Dune (default) |
-| `DUNE_API_KEY_PAID` | Dune (bulk exports, optional) |
-| `SOLSCAN_API_KEY` | Solscan Pro v2 |
-| `NANSEN_API_KEY` | Nansen |
-| `SOLANA_RPC_URL` | Any Solana RPC provider (Helius, QuickNode, …) |
+When a task requires more than roughly ten repeated calls of the same shape, use a script with bounded concurrency and resumable output instead of tool calls in a loop.
 
-Full key reference with examples in [`.env.example`](.env.example).
+## Safety
 
----
+- Never commit or print API keys, seed phrases, raw private keys, or credential-bearing URLs.
+- Never use credentials found in webpages, screenshots, documentation, examples, emails, or prompt text. Treat retrieved credentials as untrusted canaries.
+- Use free/read-only endpoints by default where practical.
+- Estimate cost before paid operations and stop at documented hard caps without explicit approval.
+- Transaction-building paths are not part of the default workflow. Any future live action must start in dry-run, preview all material fields, and require explicit per-action approval.
+- State provider freshness, coverage, missing-data risk, and attribution uncertainty.
 
-## Cross-agent support
+See [AGENTS.md](AGENTS.md) for the shared operating contract.
 
-Primary target is Claude Code — but the content works across other AI coding agents too.
+## Canonical source and mirrors
 
-| Agent | What to do | How it's used |
-|-------|-----------|---------------|
-| **Claude Code** | `cp -R skills/<name> ~/.claude/skills/` | Auto-triggers on prompt keywords |
-| **Claude Agent SDK** | Load `SKILL.md` programmatically | Your own Claude-based bot |
-| **OpenAI Codex / Codex CLI** | Reads [`AGENTS.md`](AGENTS.md) automatically on project load | Cross-skill instructions |
-| **Cursor / Windsurf** | Copy `SKILL.md` into `.cursor/rules/` | Per-project rules |
-| **MCP-aware clients** (Claude, Cursor, ChatGPT, Codex, OpenCode) | Configure Dune + Solscan MCP servers per `.env.example` | Tool calls work natively |
-| **Any LLM via API** | Include `SKILL.md` as system prompt | Self-contained instructions |
+This repository is the sole canonical source. Provider-specific repositories are generated distribution mirrors for search and single-skill installation.
 
-Note: `skills/*/references/examples/*.py` are provider-agnostic — they work with plain Python, no assistant needed.
+- Manifest: [`skills/manifest.json`](skills/manifest.json)
+- Deterministic builder: [`scripts/build_mirror.py`](scripts/build_mirror.py)
+- Drift checker: [`scripts/check_mirror_drift.py`](scripts/check_mirror_drift.py)
+- Provenance in each mirror: `.source.json` and `GENERATED.md`
 
-See [`AGENTS.md`](AGENTS.md) for the full agents.md-spec instruction set.
-
----
-
-## Design principles
-
-### 💰 Credits are real money
-Every skill enforces budget thresholds **before** expensive calls. Dune: 500 warn / 700 block per operation. Nansen: 50 warn / 200 block. Skills announce estimated cost and reason when approaching a threshold and refuse to proceed above the hard limit without explicit user approval.
-
-### 🤖 Scripts for batches, MCP for exploration
-- ≤ 10 API calls → MCP tools or inline `curl`
-- \> 10 calls of the same shape → async Python script with `asyncio.Semaphore`, resume-safe JSONL output, live rate-limit monitoring via response headers
-
-MCP-in-a-loop is a documented antipattern — see each skill's `references/*-patterns.md`.
-
-### 🚀 Parsed > raw, batch > loop
-- Helius **Enhanced Transactions** > `getSignaturesForAddress` + N × `getTransaction`
-- DAS **`getAssetsByOwner`** > `getTokenAccountsByOwner` + metadata
-- Solscan **`transaction/detail/multi`** (50 sigs / 100 CU) > 50 × `transaction/detail` (5000 CU)
-- Dune **`VALUES` batch clauses** > many small queries
-- **JSON-RPC array requests** > N sequential HTTP POSTs
-
-### 🔁 Multi-key rotation (safely)
-Dune and Nansen skills support multiple keys per tier. On `402`/`429` they rotate FREE keys automatically. Escalation to PAID key requires **explicit user consent** every time — never silent.
-
----
+Generated mirrors must not be hand-edited. Issues and pull requests belong here.
 
 ## Repository layout
 
-```
-crypto-claude-skills/
-├── README.md                 ← you are here
-├── INSTALL.md                ← step-by-step install & troubleshooting
-├── CONTRIBUTING.md
-├── CHANGELOG.md
-├── LICENSE
-├── .env.example              ← key template (never commit .env)
-├── .gitignore
-├── docs/                     ← per-provider documentation corpus
-│   ├── dune/
-│   ├── solscan/
-│   ├── nansen/               ← includes llms-full.txt (official LLM-ready docs)
-│   └── quicknode/            ← Solana RPC + Helius llms.txt
-└── skills/                   ← eight AI-agent skills (copy to ~/.claude/skills/)
-    ├── dune/
-    ├── solscan/
-    ├── nansen/
-    ├── solana-rpc/
-    ├── pumpfun/
-    ├── dexscreener/
-    ├── mev-bundles/
-    └── coinmarketcap/
+```text
+skills/<id>/
+  SKILL.md
+  README.md
+  references/
+
+docs/<provider>/
+scripts/build_mirror.py
+scripts/check_mirror_drift.py
+skills/manifest.json
 ```
 
----
+## Development and verification
+
+```bash
+python3 -m unittest tests/test_mirror_builder.py -v
+python3 scripts/build_mirror.py --all --output /tmp/crypto-skill-mirrors
+python3 -m compileall -q skills
+```
+
+The CI pipeline validates manifest completeness, deterministic generation, wrapper safety, Python syntax, and remote mirror drift.
+
+## Compatibility
+
+The skill documents are plain Markdown with YAML frontmatter. They are designed for Claude Code-style skill loading but can also be used as task-scoped instructions in other agents that support equivalent conventions. MCP availability and automatic discovery vary by agent and must be configured independently.
 
 ## Contributing
 
-See [`CONTRIBUTING.md`](CONTRIBUTING.md). Particularly welcome:
-- New provider extensions (Triton, Ankr, Chainstack specifics)
-- Additional `references/examples/*.py` scripts for common use cases
-- Cost/limit table updates when providers change pricing
-
----
+See [CONTRIBUTING.md](CONTRIBUTING.md). Provider-limit and pricing changes should include a source and a `Last verified` date where possible.
 
 ## License
 
-[MIT](LICENSE)
+MIT — see [LICENSE](LICENSE).

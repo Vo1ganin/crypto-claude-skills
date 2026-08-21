@@ -45,7 +45,7 @@ Streams trades (buys + sells) on specific token mints.
 You can add more mints dynamically by sending additional subscribe messages with more keys.
 
 ### `subscribeAccountTrade`
-Streams trades initiated by specific wallets. Primary use: **copytrade**.
+Streams trades initiated by specific wallets. Primary use: **account-activity monitoring**.
 ```json
 {"method": "subscribeAccountTrade", "keys": ["wallet1", "wallet2"]}
 ```

@@ -1,0 +1,38 @@
+name: Mirror drift
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "17 6 * * 1"
+
+permissions:
+  contents: read
+
+jobs:
+  public-mirrors:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Clone public generated mirrors
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/crypto-skill-mirrors
+          python - <<'PY' >/tmp/public-mirrors.txt
+          import json
+          from pathlib import Path
+          data = json.loads(Path("skills/manifest.json").read_text())
+          for item in data["skills"]:
+              if item.get("visibility") != "private_until_safety_review":
+                  print(item["mirror_repo"])
+          PY
+          while IFS= read -r repo; do
+            git clone --depth 1 "https://github.com/Vo1ganin/${repo}.git" "/tmp/crypto-skill-mirrors/${repo}"
+          done </tmp/public-mirrors.txt
+      - name: Compare mirrors with canonical source
+        run: python scripts/check_mirror_drift.py --public-only --mirrors-root /tmp/crypto-skill-mirrors

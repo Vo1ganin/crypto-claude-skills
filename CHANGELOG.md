@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- Eight-skill machine-readable manifest with neutral descriptions/topics.
+- Deterministic standalone mirror builder and provenance files.
+- Safe dry-run mirror sync tool and remote drift checker.
+- CI for manifest, deterministic generation, Python syntax, safety, and scheduled public-mirror drift.
+
+### Changed
+- Reframed pump.fun and MEV skills around read-only research and monitoring.
+- Removed public live transaction examples and raw-private-key environment guidance.
+- Made the umbrella repository the sole canonical source; standalone repositories are generated mirrors.
+- Updated installation and agent guidance for all eight skills.
+
+### Security
+- Propagated retrieved-credential/canary protections into generated mirror instructions.
+- Added explicit read-only defaults and per-action approval boundary for future transaction workflows.
+
 ## [0.1.0] — 2026-04-24
 
 Initial release. Four skills packaged together.
