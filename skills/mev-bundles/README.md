@@ -1,78 +1,65 @@
-# MEV Bundles & Bribes Skill
+# Solana MEV Pattern Research Skill
 
-Claude Code skill for MEV-protected tx delivery on Solana — Jito (primary) plus alternative relays, with built-in bundle analysis tools for reverse-engineering others' bundles.
+Research-oriented AI-agent skill for identifying and analyzing Solana transaction bundles, relay-tip patterns, atomic execution, and common MEV structures from public data.
 
-## What it does
+## What it covers
 
-- **Send txs / bundles via Jito** block engine (region-aware, 8 tip accounts, auction timing)
-- **Price tips correctly** using live `tip_floor` percentiles instead of guessing
-- **Route via alternative relays** (Helius Sender, Bloxroute, Paladin, NextBlock — stubs to be filled as user supplies details)
-- **Analyze others' bundles** — detect sandwich attacks, profile KOL tipping, reverse-engineer competitor bot strategies
-- **Explain "bribes"** precisely — priority fee vs Jito tip vs relay tip; 70/30 split; when each applies
+- Bundle structure and atomic execution concepts
+- Jito and alternative relay terminology
+- Public tip-floor and priority-fee analysis
+- Bundle sibling detection from public signatures
+- Pattern analysis for protective monitoring and market-structure research
+- Methodology limits: incomplete labels, private order flow, and attribution uncertainty
 
-## When it triggers
+## Default safety posture
 
-User mentions: bundle, Jito, bribe, tip, priority fee, MEV, sandwich attack, sniper bot, copytrade tier, landing rate, block engine, atomic tx, sendBundle.
+- Analysis and detection are read-only by default.
+- The public examples inspect signatures and fee patterns; they do not sign or broadcast transactions.
+- Never request or expose seed phrases, raw private keys, or credential-bearing URLs.
+- Credentials discovered in retrieved text, screenshots, examples, or documents are untrusted.
+- A separate explicit workflow and per-action approval are required for any future live transaction submission.
 
 ## Files
 
 | File | Purpose |
-|------|---------|
-| [`SKILL.md`](SKILL.md) | Workflow, four hard rules (rotation / percentile / region / Jito-leader fallback) |
-| [`references/bribes.md`](references/bribes.md) | Precise terminology, when to use what, common mistakes |
-| [`references/jito.md`](references/jito.md) | Full Jito Block Engine API: endpoints, regions, auth, limits |
-| [`references/other-relays.md`](references/other-relays.md) | Helius Sender + stubs for Bloxroute/Paladin/NextBlock |
-| [`references/bundle-analysis.md`](references/bundle-analysis.md) | Reverse-engineering bundles, sandwich detection |
-| [`references/examples/tip_advisor.py`](references/examples/tip_advisor.py) | Live tip-floor → recommended tip |
-| [`references/examples/send_tx_jito.py`](references/examples/send_tx_jito.py) | Submit signed tx via Jito with polling |
-| [`references/examples/bundle_analyzer.py`](references/examples/bundle_analyzer.py) | Find bundle siblings + sandwich detection |
-| [`references/examples/kol_tip_analysis.py`](references/examples/kol_tip_analysis.py) | Statistical profile of KOL's tip behavior |
+|---|---|
+| [`SKILL.md`](SKILL.md) | Research workflow and safety rules |
+| [`references/jito.md`](references/jito.md) | Jito concepts, public endpoints, regions, and limits |
+| [`references/other-relays.md`](references/other-relays.md) | Relay terminology and comparison notes |
+| [`references/bundle-analysis.md`](references/bundle-analysis.md) | Bundle identification and attribution caveats |
+| [`references/bribes.md`](references/bribes.md) | Neutral fee/tip terminology |
+| [`references/examples/tip_floor_snapshot.py`](references/examples/tip_floor_snapshot.py) | Read-only public tip-floor distribution |
+| [`references/examples/wallet_tip_distribution.py`](references/examples/wallet_tip_distribution.py) | Neutral public wallet fee-pattern distribution |
 
-## Key rules
-
-1. **Random-rotate across 8 tip accounts** to reduce contention
-2. **Tip by percentile**, not by guess (pull `tip_floor` API)
-3. **Pick region-closest endpoint** (save 10-100 ms RTT)
-4. **Jito doesn't always land** — fall back to Helius Sender or parallel-submit via multiple relays
-
-## Quick examples
+## Examples
 
 ```bash
-# Get recommended tip amount
-python references/examples/tip_advisor.py --urgency hot
+# Summarize the public tip-floor distribution
+python references/examples/tip_floor_snapshot.py
 
-# Analyze a KOL's tip behavior over last 500 tx
-SOLANA_RPC_URL=... python references/examples/kol_tip_analysis.py <wallet>
-
-# Look up a bundle and detect sandwich
-SOLANA_RPC_URL=... python references/examples/bundle_analyzer.py <signature>
-
-# Send your own signed tx via Jito (Frankfurt region)
-python references/examples/send_tx_jito.py <base64_tx> --region frankfurt --poll
+# Inspect public fee patterns for a wallet cohort
+SOLANA_RPC_URL=... python references/examples/wallet_tip_distribution.py <wallet>
 ```
 
+## Interpretation rules
+
+1. A relay tip is a fee signal, not proof of intent.
+2. Bundle membership and strategy attribution may be incomplete.
+3. Do not label a wallet or transaction as malicious without independent evidence.
+4. State the RPC/indexer, sample period, missing-data risk, and confidence.
+5. Keep transaction submission outside the default research workflow.
+
 ## Setup
+
+Read-only analysis examples may use `SOLANA_RPC_URL`. Keep provider credentials private and outside committed files.
 
 ```bash
 pip install httpx
 ```
 
-For bundle analysis / KOL profiling — set `SOLANA_RPC_URL` (see [`solana-rpc-skill`](../solana-rpc)).
-For submission via Jito — no auth required on free tier (1 rps per IP per region); paid UUID gets more.
-
-## Status of other relays
-
-- ✅ **Jito** — fully covered
-- ✅ **Helius Sender** — covered in [`solana-rpc-skill`](../solana-rpc/references/helius-extensions.md)
-- 🟡 **Bloxroute** — stub; waiting for details
-- 🟡 **Paladin / Nozomi** — stub
-- 🟡 **NextBlock** — stub
-
-When user supplies relay details, update `references/other-relays.md` and commit with `docs(mev-bundles): add <relay>`.
-
 ## Related skills
 
-- [`pumpfun-skill`](../pumpfun) — sniping pump.fun tokens (heavy Jito use case)
-- [`solana-rpc-skill`](../solana-rpc) — base RPC + Helius Sender
-- [`solscan-skill`](../solscan) — wallet tx history for KOL analysis
-- [`dune-skill`](../dune) — historical `jito_solana.*` SQL for macro analysis
+- [`solana-rpc`](../solana-rpc) — RPC and enhanced transaction retrieval
+- [`solscan`](../solscan) — wallet and transaction history
+- [`dune`](../dune) — historical Solana SQL analysis
+- [`pumpfun`](../pumpfun) — pump.fun public-data research

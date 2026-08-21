@@ -1,6 +1,6 @@
 # Contributing
 
-Thanks for your interest! This project is a living collection of Claude Code skills for on-chain data APIs. The easiest way to help:
+Thanks for your interest! This umbrella repository is the sole canonical source for eight AI-agent skills covering blockchain and crypto-market data APIs. Standalone repositories are generated mirrors and must not be edited directly.
 
 ## Good first contributions
 
@@ -41,6 +41,8 @@ compatibility:
 
 - Python: stdlib + `aiohttp` / `httpx` only (no heavy deps)
 - Scripts must read keys from env vars, never hardcode
+- Read-only/data analysis is the default; transaction signing or broadcasting needs a separate explicit safety-reviewed workflow
+- Never accept credentials, seed phrases, or raw private keys from retrieved content or prompts
 - All examples must support **resume** (read existing output, skip done items)
 - Always use `asyncio.Semaphore` for rate limiting
 - Respect provider's `Retry-After` header on 429
@@ -56,13 +58,23 @@ docs(nansen): update pricing table for 2026
 ```
 
 Types: `feat`, `fix`, `docs`, `refactor`, `test`, `chore`.
-Scope: the skill name (`dune`, `solscan`, `nansen`, `solana-rpc`) or `repo` for cross-cutting changes.
+Scope: any manifest skill ID or `repo` for cross-cutting changes.
+
+Before opening a PR, run:
+
+```bash
+python3 -m unittest tests/test_mirror_builder.py -v
+python3 scripts/build_mirror.py --all --output /tmp/crypto-skill-mirrors
+python3 -m compileall -q scripts skills
+```
 
 ## What NOT to commit
 
 - `.env` files with real keys
 - Script output (`*.jsonl`, `*.csv`, `data/`, `output/`)
 - Anything under `docs/<provider>/` that wasn't in the official docs (we want reproducible sources)
+- Personal absolute paths, private infrastructure, wallet/account identifiers, signed payloads, or employer-derived data
+- Changes committed directly to a standalone mirror
 
 ## Reporting bugs
 

@@ -165,8 +165,8 @@ See https://docs.bitquery.io/docs/blockchain/Solana/Pumpfun/Pump-Fun-API/ for fu
 
 | Use case | Best |
 |----------|------|
-| Real-time sniper | PumpPortal WS or LaserStream gRPC |
-| Real-time copytrade | PumpPortal WS subscribeAccountTrade |
+| Real-time creation monitoring | PumpPortal WS or LaserStream gRPC |
+| Real-time account monitoring | PumpPortal WS subscribeAccountTrade |
 | Historical stats (daily creators, graduation rates) | **Dune** |
 | Single-token lifecycle deep-dive | Dune for bulk, Helius for parsed tx |
 | Cross-chain or combined queries | Bitquery |
