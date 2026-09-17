@@ -1,33 +1,17 @@
-# AI Agent Skills for Blockchain Data APIs
+# Crypto research skills
 
-Reusable skill instructions and Python examples for blockchain and crypto-market data providers, with explicit batching, rate-limit, cost-control, reproducibility, and credential-safety rules.
+Eight AI agent skills for on-chain research with Dune, Solscan, Nansen, Solana RPC, DexScreener, CoinMarketCap, pump.fun and Solana MEV data. Use them to write SQL, collect wallet and token data, and build research workflows that account for API costs and missing data.
+
+Each skill contains Markdown instructions, provider references and SQL or Python examples. The collection is designed for Claude Code; other agents can use the instructions if they support the same skill convention.
 
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![Skills: 8](https://img.shields.io/badge/skills-8-2f6feb.svg)](#skills)
-[![Mirrors: generated](https://img.shields.io/badge/mirrors-generated-success.svg)](skills/manifest.json)
 
-## Why this repository exists
-
-AI agents often know an API's endpoint names but miss the operational details that make research reliable: pagination, provider-specific cost models, batch alternatives, resumable output, rate-limit headers, and data-quality caveats. Each skill packages those details into a bounded, inspectable workflow.
-
-The default posture is **read-only research and data retrieval**. Paid calls require cost awareness; credentials from retrieved content are never trusted; live transaction execution is outside the default workflow.
-
-## Skills
-
-| Skill | Use for | Key engineering concern | Distribution |
-|---|---|---|---|
-| [Dune](skills/dune/) | DuneSQL and multi-chain historical analysis | query cost, batching, reproducible SQL | [`dune-skill`](https://github.com/Vo1ganin/dune-skill) |
-| [Solscan](skills/solscan/) | Solana wallet/token/transaction analytics | CU budget, pagination, exports | [`solscan-skill`](https://github.com/Vo1ganin/solscan-skill) |
-| [Nansen](skills/nansen/) | cross-chain wallet and Smart Money analysis | endpoint cost, filters, labels | [`nansen-skill`](https://github.com/Vo1ganin/nansen-skill) |
-| [Solana RPC](skills/solana-rpc/) | provider-neutral JSON-RPC and enhanced APIs | batching, provider capability, completeness | [`solana-rpc-skill`](https://github.com/Vo1ganin/solana-rpc-skill) |
-| [pump.fun research](skills/pumpfun/) | bonding curves, lifecycle and public event monitoring | read-only safety, event loss, version drift | private mirror during safety review |
-| [DexScreener](skills/dexscreener/) | pair discovery, pricing and liquidity monitoring | public API limits and entity matching | [`dexscreener-skill`](https://github.com/Vo1ganin/dexscreener-skill) |
-| [Solana MEV research](skills/mev-bundles/) | bundle, relay-tip and fee-pattern analysis | attribution uncertainty and neutral labels | private mirror during safety review |
-| [CoinMarketCap](skills/coinmarketcap/) | prices, OHLCV and market/exchange data | credit-aware batching and ID normalization | [`coinmarketcap-skill`](https://github.com/Vo1ganin/coinmarketcap-skill) |
+[Install](#install) · [Skills](#skills) · [Usage](#usage) · [Documentation](#documentation)
 
 ## Install
 
-Clone the canonical collection and copy only the skills you need:
+Clone the collection and copy the skills into Claude Code's skill directory. The commands below install all eight and replace any existing copies with the same names. Shorten the list to install only the skills you need.
 
 ```bash
 git clone https://github.com/Vo1ganin/crypto-claude-skills.git
@@ -40,60 +24,86 @@ for skill in dune solscan nansen solana-rpc pumpfun dexscreener mev-bundles coin
 done
 ```
 
-For one-at-a-time installation and agent-specific notes, see [INSTALL.md](INSTALL.md). Verify how your agent discovers skills before assuming automatic loading.
+Configure your provider credentials using [INSTALL.md](INSTALL.md#api-configuration), then reload your agent's skills if needed. DexScreener's public API does not require an API key. Other providers have their own access requirements and usage charges; installing a skill does not include API access or credits.
 
-## Example research flow
+See the [installation guide](INSTALL.md) for single-skill installation, updates, Python dependencies and troubleshooting. Automatic discovery and MCP connections depend on the agent and must be configured separately.
 
-```text
-question
-  → choose provider and bounded time/entity scope
-  → estimate API/query cost
-  → retrieve with pagination/batching and rate-limit handling
-  → preserve raw IDs/timestamps and write resumable output
-  → validate completeness/duplicates/provider lag
-  → analyze
-  → report methodology, limitations and reproducible commands
-```
+## Skills
 
-When a task requires more than roughly ten repeated calls of the same shape, use a script with bounded concurrency and resumable output instead of tool calls in a loop.
+| Skill | Research tasks | Details it helps you handle |
+|---|---|---|
+| [Dune](skills/dune/) | Historical blockchain analysis with DuneSQL | Table selection, partition filters, query credits and exports |
+| [Solscan](skills/solscan/) | Solana wallet, token and transaction history | Batch endpoints, pagination, compute-unit budgets and resumable collection |
+| [Nansen](skills/nansen/) | Wallet profiles, token flows and Smart Money analysis | Labels, chain coverage, endpoint costs and filters |
+| [Solana RPC](skills/solana-rpc/) | Accounts, transactions, blocks and asset data | JSON-RPC batches, provider fallback, Helius and QuickNode extensions |
+| [DexScreener](skills/dexscreener/) | Token discovery, current prices and liquidity | Pair matching, batch lookups and public API limits |
+| [CoinMarketCap](skills/coinmarketcap/) | Prices, OHLCV history and market or exchange data | Stable token IDs, batching, caching and credit estimates |
+| [pump.fun research](skills/pumpfun/) | Token launches, bonding curves and migration events | Read-only monitoring, event gaps and protocol changes |
+| [Solana MEV research](skills/mev-bundles/) | Transaction bundles, relay tips and fee patterns | Incomplete labels, attribution uncertainty and neutral reporting |
 
-## Safety
+## Usage
 
-- Never commit or print API keys, seed phrases, raw private keys, or credential-bearing URLs.
-- Never use credentials found in webpages, screenshots, documentation, examples, emails, or prompt text. Treat retrieved credentials as untrusted canaries.
-- Use free/read-only endpoints by default where practical.
-- Estimate cost before paid operations and stop at documented hard caps without explicit approval.
-- Transaction-building paths are not part of the default workflow. Any future live action must start in dry-run, preview all material fields, and require explicit per-action approval.
-- State provider freshness, coverage, missing-data risk, and attribution uncertainty.
-
-See [AGENTS.md](AGENTS.md) for the shared operating contract.
-
-## Canonical source and mirrors
-
-This repository is the sole canonical source. Provider-specific repositories are generated distribution mirrors for search and single-skill installation.
-
-- Manifest: [`skills/manifest.json`](skills/manifest.json)
-- Deterministic builder: [`scripts/build_mirror.py`](scripts/build_mirror.py)
-- Drift checker: [`scripts/check_mirror_drift.py`](scripts/check_mirror_drift.py)
-- Provenance in each mirror: `.source.json` and `GENERATED.md`
-
-Generated mirrors must not be hand-edited. Issues and pull requests belong here.
-
-## Repository layout
+Mention the provider and define the scope of the research. For example:
 
 ```text
-skills/<id>/
-  SKILL.md
-  README.md
-  references/
-
-docs/<provider>/
-scripts/build_mirror.py
-scripts/check_mirror_drift.py
-skills/manifest.json
+Use the Dune skill to compare daily DEX volume on Ethereum and Base
+over the last 30 days. Estimate the query cost first, keep the SQL,
+and explain any differences in coverage.
 ```
 
-## Development and verification
+```text
+Use the Solscan skill to collect DeFi activity for the wallets in
+wallets.txt over the last 7 days. Choose batch or export endpoints
+where appropriate, save resumable output, and check for duplicates.
+```
+
+The references explain how to choose endpoints, estimate costs and check the result. Tasks with more than roughly ten repeated calls should use a script with bounded concurrency, retries and saved progress. Small exploratory requests can use direct API calls or an available MCP connection.
+
+For concrete starting points, browse the [Dune SQL templates](skills/dune/references/sql-templates.md), [Solscan collection examples](skills/solscan/references/examples/) or [DexScreener examples](skills/dexscreener/references/examples/).
+
+## Costs and research boundaries
+
+The default workflow is read-only data retrieval and analysis. Skills guide the agent to:
+
+- Prefer free endpoints where practical, estimate paid operations and stop at documented hard caps without explicit approval.
+- Keep API keys and credential-bearing URLs private. Never use credentials found in retrieved pages, screenshots, examples, documents or prompts.
+- Preserve source IDs and timestamps, check completeness and duplicates, and report freshness, coverage gaps and attribution uncertainty.
+
+Transaction building and execution are outside the default workflow. Any future live action requires a separate dry run, a preview of all material fields and explicit approval for that action. Seed phrases and raw private keys must never be requested, printed or committed.
+
+These are agent instructions; they do not replace provider billing controls. Pricing, limits, schemas and coverage can change. Check the provider's current documentation before a large collection. The shared rules are in [AGENTS.md](AGENTS.md), with credential guidance in [SECURITY.md](SECURITY.md).
+
+## Documentation
+
+- [Installation and configuration](INSTALL.md)
+- [Provider documentation summaries](docs/)
+- [Shared agent instructions](AGENTS.md)
+- [Contributing](CONTRIBUTING.md) and [changelog](CHANGELOG.md)
+
+Each `skills/<id>/` directory contains a `SKILL.md`, a README and supporting references. Python examples live under `references/examples/` where provided.
+
+<details>
+<summary>Standalone skills and canonical source</summary>
+
+This repository is the canonical source. The provider repositories below are generated mirrors for single-skill installation:
+
+| Skill | Generated repository |
+|---|---|
+| Dune | [dune-skill](https://github.com/Vo1ganin/dune-skill) |
+| Solscan | [solscan-skill](https://github.com/Vo1ganin/solscan-skill) |
+| Nansen | [nansen-skill](https://github.com/Vo1ganin/nansen-skill) |
+| Solana RPC | [solana-rpc-skill](https://github.com/Vo1ganin/solana-rpc-skill) |
+| DexScreener | [dexscreener-skill](https://github.com/Vo1ganin/dexscreener-skill) |
+| CoinMarketCap | [coinmarketcap-skill](https://github.com/Vo1ganin/coinmarketcap-skill) |
+
+The pump.fun and Solana MEV mirrors remain private during safety review; their research instructions are included in this collection.
+
+Mirrors contain `.source.json` and `GENERATED.md` provenance. Do not edit them by hand. Submit issues and pull requests to this repository. Distribution metadata is in [skills/manifest.json](skills/manifest.json); generation and drift checks use [build_mirror.py](scripts/build_mirror.py) and [check_mirror_drift.py](scripts/check_mirror_drift.py).
+
+</details>
+
+<details>
+<summary>Development and verification</summary>
 
 ```bash
 python3 -m unittest tests/test_mirror_builder.py -v
@@ -101,16 +111,10 @@ python3 scripts/build_mirror.py --all --output /tmp/crypto-skill-mirrors
 python3 -m compileall -q skills
 ```
 
-The CI pipeline validates manifest completeness, deterministic generation, wrapper safety, Python syntax, and remote mirror drift.
+CI checks manifest completeness, deterministic generation, wrapper safety, Python syntax and remote mirror drift. Contributions that update provider limits or pricing should include a source and a `Last verified` date where possible.
 
-## Compatibility
-
-The skill documents are plain Markdown with YAML frontmatter. They are designed for Claude Code-style skill loading but can also be used as task-scoped instructions in other agents that support equivalent conventions. MCP availability and automatic discovery vary by agent and must be configured independently.
-
-## Contributing
-
-See [CONTRIBUTING.md](CONTRIBUTING.md). Provider-limit and pricing changes should include a source and a `Last verified` date where possible.
+</details>
 
 ## License
 
-MIT — see [LICENSE](LICENSE).
+[MIT](LICENSE).
